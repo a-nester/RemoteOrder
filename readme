@@ -1,0 +1,29 @@
+src/
+├── app/
+│   └── App.tsx            ← корінь (поки логіка роутінгу)
+│
+├── modules/
+│   └── auth/
+│       ├── auth.service.ts
+│       ├── auth.types.ts
+│       ├── auth.mock.ts
+│       └── auth.store.ts
+│
+├── screens/
+│   ├── LoginScreen.tsx
+│   └── HomeScreen.tsx
+│
+├── components/
+│   └── Button.tsx
+│
+└── shared/
+    └── styles.ts
+
+
+
+Правило:mkdir src
+
+modules — бізнес-логіка
+screens — UI-екрани
+components — перевикористовувані UI
+app — glue / навігація
