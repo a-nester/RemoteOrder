@@ -1,9 +1,35 @@
-import { View, Text } from "react-native";
+// src/screens/admin/AdminHomeScreen.tsx
+import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 
-export default function AdminHomeScreen() {
+type Props = { onLogout?: () => void };
+
+export default function AdminHomeScreen({ onLogout }: Props) {
   return (
-    <View>
-      <Text>Admin Home</Text>
+    <View style={styles.container}>
+      <Text style={styles.title}>Admin Home</Text>
+      <Text style={styles.text}>Вітаю! Це сторінка адміністратора.</Text>
+      <TouchableOpacity style={styles.button} onPress={onLogout}>
+        <Text style={styles.buttonText}>Log out</Text>
+      </TouchableOpacity>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 24,
+    backgroundColor: "#f2f2f2",
+  },
+  title: { fontSize: 28, fontWeight: "700", marginBottom: 16 },
+  text: { fontSize: 18, marginBottom: 32 },
+  button: {
+    backgroundColor: "#000",
+    padding: 14,
+    borderRadius: 8,
+    alignItems: "center",
+  },
+  buttonText: { color: "#fff", fontSize: 16, fontWeight: "500" },
+});

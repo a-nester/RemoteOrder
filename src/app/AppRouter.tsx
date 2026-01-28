@@ -1,21 +1,44 @@
-import { useAuthStore } from "../store/auth.store";
+// src/app/AppRouter.tsx
+import { useState } from "react";
+import LoginScreen from "../screens/LoginScreen";
 import AdminHomeScreen from "../screens/admin/AdminHomeScreen";
 import ManagerHomeScreen from "../screens/manager/ManagerHomeScreen";
 import ClientHomeScreen from "../screens/client/ClientHomeScreen";
-import LoginScreen from "../screens/LoginScreen";
+
+// Мок користувачів
+const USERS = [
+  { email: "admin@test.com", password: "123456", role: "admin" },
+  { email: "manager@test.com", password: "123456", role: "manager" },
+  { email: "client@test.com", password: "123456", role: "client" },
+];
 
 export default function AppRouter() {
-  const user = useAuthStore((s) => s.user);
+  const [user, setUser] = useState<any>(null);
 
-  if (!user) return <LoginScreen />;
+  const handleLogin = (email: string, password: string) => {
+    const found = USERS.find(
+      (u) => u.email === email && u.password === password,
+    );
+    if (found) {
+      console.log("✅ Logged in", found);
+      setUser(found);
+    } else {
+      console.log("❌ Login failed", { email, password });
+      alert("Невірний email або пароль");
+    }
+  };
+
+  if (!user) {
+    return <LoginScreen onLogin={handleLogin} />;
+  }
 
   switch (user.role) {
     case "admin":
-      return <AdminHomeScreen />;
+      return <AdminHomeScreen onLogout={() => setUser(null)} />;
     case "manager":
-      return <ManagerHomeScreen />;
+      return <ManagerHomeScreen onLogout={() => setUser(null)} />;
     case "client":
-      return <ClientHomeScreen />;
+      return <ClientHomeScreen onLogout={() => setUser(null)} />;
     default:
       return null;
   }
