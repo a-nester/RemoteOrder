@@ -1,44 +1,32 @@
-// src/app/AppRouter.tsx
-import { useState } from "react";
+import { View, ActivityIndicator } from "react-native";
+import { useAuthStore } from "../store/auth.store";
+
 import LoginScreen from "../screens/LoginScreen";
 import AdminHomeScreen from "../screens/admin/AdminHomeScreen";
 import ManagerHomeScreen from "../screens/manager/ManagerHomeScreen";
 import ClientHomeScreen from "../screens/client/ClientHomeScreen";
 
-// Мок користувачів
-const USERS = [
-  { email: "admin@test.com", password: "123456", role: "admin" },
-  { email: "manager@test.com", password: "123456", role: "manager" },
-  { email: "client@test.com", password: "123456", role: "client" },
-];
-
 export default function AppRouter() {
-  const [user, setUser] = useState<any>(null);
+  const { user, isHydrated } = useAuthStore();
 
-  const handleLogin = (email: string, password: string) => {
-    const found = USERS.find(
-      (u) => u.email === email && u.password === password,
+  // ⏳ ЧЕКАЄМО ВІДНОВЛЕННЯ STORE
+  if (!isHydrated) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <ActivityIndicator size="large" />
+      </View>
     );
-    if (found) {
-      console.log("✅ Logged in", found);
-      setUser(found);
-    } else {
-      console.log("❌ Login failed", { email, password });
-      alert("Невірний email або пароль");
-    }
-  };
-
-  if (!user) {
-    return <LoginScreen onLogin={handleLogin} />;
   }
+
+  if (!user) return <LoginScreen />;
 
   switch (user.role) {
     case "admin":
-      return <AdminHomeScreen onLogout={() => setUser(null)} />;
+      return <AdminHomeScreen />;
     case "manager":
-      return <ManagerHomeScreen onLogout={() => setUser(null)} />;
+      return <ManagerHomeScreen />;
     case "client":
-      return <ClientHomeScreen onLogout={() => setUser(null)} />;
+      return <ClientHomeScreen />;
     default:
       return null;
   }
