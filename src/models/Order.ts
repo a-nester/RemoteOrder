@@ -5,9 +5,9 @@ export type OrderStatus =
   | "failed";
 
 export type Order = {
-  id: string;              // UUID v4
+  id: string;
   clientId: string;
   clientEmail: string;
-  createdAt: number;
   status: OrderStatus;
+  createdAt: number;
 };

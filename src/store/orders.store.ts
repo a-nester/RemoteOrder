@@ -1,38 +1,44 @@
 import { create } from "zustand";
-import { Order } from "../models/Order";
+import { Order } from "../types/order";
+import { mockOrders } from "../mocks/orders.mock";
 
-type OrdersState = {
+interface OrdersState {
   orders: Order[];
+  loading: boolean;
 
-  loadOrdersByClient: (clientEmail: string) => void;
-  loadAllOrders: () => void;
+  loadAllOrders: () => Promise<void>;
+  loadOrdersByClient: (clientEmail: string) => Promise<void>;
+  addOrder: (order: Order) => Promise<void>;
+}
 
-  addOrder: (order: Order) => void;
-  clear: () => void;
-};
-
-export const useOrdersStore = create<OrdersState>((set, get) => ({
+export const useOrdersStore = create<OrdersState>((set) => ({
   orders: [],
+  loading: false,
 
-  loadOrdersByClient: (clientEmail) => {
-    // MOCK: далі тут буде SQLite
-    const filtered = get().orders.filter(
-      (o) => o.clientEmail === clientEmail,
+  loadAllOrders: async () => {
+    set({ loading: true });
+    await new Promise((r) => setTimeout(r, 300));
+    set({ orders: mockOrders, loading: false });
+  },
+
+  loadOrdersByClient: async (clientEmail) => {
+    set({ loading: true });
+    await new Promise((r) => setTimeout(r, 300));
+
+    const filtered = mockOrders.filter(
+      (o) => o.clientEmail === clientEmail
     );
 
-    set({ orders: filtered });
+    set({ orders: filtered, loading: false });
   },
 
-  loadAllOrders: () => {
-    // MOCK: для адміна
-    set({ orders: get().orders });
-  },
+  addOrder: async (order) => {
+    set({ loading: true });
+    await new Promise((r) => setTimeout(r, 200));
 
-  addOrder: (order) => {
     set((state) => ({
-      orders: [...state.orders, order],
+      orders: [order, ...state.orders],
+      loading: false,
     }));
   },
-
-  clear: () => set({ orders: [] }),
 }));

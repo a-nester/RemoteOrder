@@ -1,93 +1,106 @@
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
-import { useEffect } from "react";
+import { useState } from "react";
 import { useAuthStore } from "../../store/auth.store";
-import { useOrdersStore } from "../../store/orders.store";
+import CreateOrderScreen from "./CreateOrderScreen";
+import OrderListScreen from "./OrderListScreen";
+import WarehouseScreen from "./WarehouseScreen";
+import ProductsScreen from "../common/ProductsScreen";
+
+type Screen = "menu" | "create_order" | "order_list" | "warehouse" | "products";
 
 export default function ManagerHomeScreen() {
-  const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
+  const [currentScreen, setCurrentScreen] = useState<Screen>("menu");
 
-  const orders = useOrdersStore((s) => s.orders);
-  const loadOrders = useOrdersStore((s) => s.loadOrders);
+  const renderScreen = () => {
+    switch (currentScreen) {
+      case "create_order":
+        return <CreateOrderScreen onBack={() => setCurrentScreen("menu")} />;
+      case "order_list":
+        return <OrderListScreen onBack={() => setCurrentScreen("menu")} />;
+      case "warehouse":
+        return <WarehouseScreen onBack={() => setCurrentScreen("menu")} />;
+      case "products":
+        return <ProductsScreen onBack={() => setCurrentScreen("menu")} role="manager" />;
+      default:
+        return (
+          <View style={styles.menuContainer}>
+            <Text style={styles.title}>Manager Home</Text>
 
-  useEffect(() => {
-    if (user?.email) {
-      loadOrders(user.email);
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => setCurrentScreen("create_order")}
+            >
+              <Text style={styles.menuItemText}>1. Створити нове замовлення</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => setCurrentScreen("order_list")}
+            >
+              <Text style={styles.menuItemText}>2. Список замовлень</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => setCurrentScreen("warehouse")}
+            >
+              <Text style={styles.menuItemText}>3. Товари на складі</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => setCurrentScreen("products")}
+            >
+              <Text style={styles.menuItemText}>4. Каталог товарів</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity onPress={logout} style={styles.logoutButton}>
+              <Text style={styles.logoutText}>Log out</Text>
+            </TouchableOpacity>
+          </View>
+        );
     }
-  }, [user?.email]);
+  };
 
-  return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Manager Home</Text>
-
-      <Text style={styles.text}>
-        Менеджер{user?.email ? `: ${user.email}` : ""}
-      </Text>
-
-      <Text style={styles.subtitle}>Замовлення клієнтів</Text>
-
-      {orders.length === 0 && (
-        <Text style={styles.empty}>Замовлень поки немає</Text>
-      )}
-
-      {orders.map((order) => (
-        <View key={order.id} style={styles.card}>
-          <Text>Клієнт: {order.clientEmail}</Text>
-          <Text>Статус: {order.status}</Text>
-        </View>
-      ))}
-
-      <TouchableOpacity style={styles.button} onPress={logout}>
-        <Text style={styles.buttonText}>Log out</Text>
-      </TouchableOpacity>
-    </View>
-  );
+  return <View style={styles.container}>{renderScreen()}</View>;
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: "#fff",
+  },
+  menuContainer: {
+    flex: 1,
     padding: 16,
     justifyContent: "center",
   },
   title: {
-    fontSize: 28,
-    fontWeight: "600",
-    marginBottom: 12,
+    fontSize: 24,
+    fontWeight: "bold",
+    marginBottom: 30,
     textAlign: "center",
   },
-  text: {
-    fontSize: 18,
-    marginBottom: 4,
-    textAlign: "center",
-  },
-  subtitle: {
-    fontSize: 16,
-    color: "#666",
-    marginBottom: 16,
-    textAlign: "center",
-  },
-  empty: {
-    textAlign: "center",
-    color: "#999",
-    marginBottom: 16,
-  },
-  card: {
+  menuItem: {
+    padding: 20,
+    backgroundColor: "#f0f0f0",
+    marginBottom: 15,
+    borderRadius: 8,
     borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 8,
+    borderColor: "#e0e0e0",
   },
-  button: {
-    backgroundColor: "#000",
-    padding: 14,
-    borderRadius: 8,
-    marginTop: 24,
+  menuItemText: {
+    fontSize: 18,
+    fontWeight: "500",
   },
-  buttonText: {
-    color: "#fff",
-    textAlign: "center",
+  logoutButton: {
+    marginTop: 40,
+    alignSelf: "center",
+    padding: 10,
+  },
+  logoutText: {
+    color: "red",
     fontSize: 16,
   },
 });

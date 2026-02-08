@@ -8,6 +8,7 @@ export type User = {
   id: number;
   email: string;
   role: Role;
+  warehouseId?: string; // Optional for admin, required for manager/client in logic
 };
 
 type AuthState = {
@@ -22,8 +23,34 @@ type AuthState = {
 // мок-дані (тимчасово)
 const USERS = [
   { id: 1, email: "admin@test.com", password: "123456", role: "admin" },
-  { id: 2, email: "manager@test.com", password: "123456", role: "manager" },
-  { id: 3, email: "client@test.com", password: "123456", role: "client" },
+  {
+    id: 2,
+    email: "manager@test.com",
+    password: "123456",
+    role: "manager",
+    warehouseId: "1", // Main Warehouse
+  },
+  {
+    id: 3,
+    email: "client@test.com",
+    password: "123456",
+    role: "client",
+    warehouseId: "1", // Main Warehouse
+  },
+  {
+    id: 4,
+    email: "manager2@test.com",
+    password: "123456",
+    role: "manager",
+    warehouseId: "2", // Kyiv Branch
+  },
+  {
+    id: 5,
+    email: "client2@test.com",
+    password: "123456",
+    role: "client",
+    warehouseId: "2", // Kyiv Branch
+  },
 ];
 
 export const useAuthStore = create<AuthState>()(
@@ -44,6 +71,7 @@ export const useAuthStore = create<AuthState>()(
             id: found.id,
             email: found.email,
             role: found.role as Role,
+            warehouseId: found.warehouseId,
           },
         });
 

@@ -1,19 +1,21 @@
 import { useEffect, useState } from "react";
-import { View, ActivityIndicator } from "react-native";
-import { initDatabase } from "../db/database";
+import { Text, View } from "react-native";
+import { initDB } from "../db/database";
 import AppRouter from "./AppRouter";
 
 export default function AppRoot() {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    initDatabase()
-      .then(() => setReady(true))
-      .catch(() => setReady(true));
+    initDB().then(() => setReady(true));
   }, []);
 
   if (!ready) {
-    return <ActivityIndicator size="large" />;
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <Text>Loading database...</Text>
+      </View>
+    );
   }
 
   return <AppRouter />;

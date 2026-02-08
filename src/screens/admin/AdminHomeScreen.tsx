@@ -1,40 +1,73 @@
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
-import { useEffect } from "react";
+import { useState } from "react";
 import { useAuthStore } from "../../store/auth.store";
-import { useOrdersStore } from "../../store/orders.store";
+import WarehouseListScreen from "./WarehouseListScreen";
+import ProductsScreen from "../common/ProductsScreen";
+import PriceEditorScreen from "./PriceEditorScreen";
+import PriceTypesScreen from "./PriceTypesScreen";
+
+type Screen = "menu" | "warehouses" | "products" | "priceEditor" | "priceTypes";
 
 export default function AdminHomeScreen() {
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
+  const [currentScreen, setCurrentScreen] = useState<Screen>("menu");
 
-  const orders = useOrdersStore((s) => s.orders);
-  const loadAllOrders = useOrdersStore((s) => s.loadAllOrders);
+  if (currentScreen === "warehouses") {
+    return <WarehouseListScreen onBack={() => setCurrentScreen("menu")} />;
+  }
 
-  useEffect(() => {
-    loadAllOrders();
-  }, []);
+  if (currentScreen === "products") {
+    // role="admin" allows editing prices if implemented in ProductsScreen (it navigates to ProductEditScreen)
+    // The user wanted "Setting prices".
+    return <ProductsScreen onBack={() => setCurrentScreen("menu")} role="admin" />;
+  }
+
+  if (currentScreen === "priceEditor") {
+      return (
+        <PriceEditorScreen 
+            onBack={() => setCurrentScreen("menu")} 
+            onNavigateToPriceTypes={() => setCurrentScreen("priceTypes")}
+            onNavigateToProducts={() => setCurrentScreen("products")}
+        />
+      );
+  }
+
+  if (currentScreen === "priceTypes") {
+      return <PriceTypesScreen onBack={() => setCurrentScreen("priceEditor")} />;
+  }
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Admin Panel</Text>
 
       <Text style={styles.text}>
-        Адміністратор{user?.email ? `: ${user.email}` : ""}
+        Ви увійшли як: {user?.email}
       </Text>
 
-      <Text style={styles.subtitle}>Усі замовлення</Text>
+      <TouchableOpacity
+        style={styles.menuItem}
+        onPress={() => setCurrentScreen("warehouses")}
+      >
+        <Text style={styles.menuItemText}>🏢 Управління складами</Text>
+      </TouchableOpacity>
 
-      {orders.length === 0 && <Text style={styles.empty}>Замовлень немає</Text>}
+      <TouchableOpacity
+        style={styles.menuItem}
+        onPress={() => setCurrentScreen("products")}
+      >
+        <Text style={styles.menuItemText}>📦 Список товарів</Text>
+      </TouchableOpacity>
 
-      {orders.map((order) => (
-        <View key={order.id} style={styles.card}>
-          <Text>Клієнт: {order.clientEmail}</Text>
-          <Text>Статус: {order.status}</Text>
-        </View>
-      ))}
+      <TouchableOpacity
+        style={styles.menuItem}
+        onPress={() => setCurrentScreen("priceEditor")}
+      >
+        <Text style={styles.menuItemText}>💲 Редактор цін</Text>
+      </TouchableOpacity>
 
-      <TouchableOpacity style={styles.button} onPress={logout}>
-        <Text style={styles.buttonText}>Log out</Text>
+      <TouchableOpacity style={styles.logoutButton} onPress={logout}>
+        <Text style={styles.logoutText}>Log out</Text>
       </TouchableOpacity>
     </View>
   );
@@ -45,6 +78,7 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 16,
     justifyContent: "center",
+    backgroundColor: "#fff",
   },
   title: {
     fontSize: 28,
@@ -53,37 +87,31 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   text: {
-    fontSize: 18,
-    marginBottom: 4,
-    textAlign: "center",
-  },
-  subtitle: {
     fontSize: 16,
+    marginBottom: 30,
+    textAlign: "center",
     color: "#666",
-    marginBottom: 16,
-    textAlign: "center",
   },
-  empty: {
-    textAlign: "center",
-    color: "#999",
-    marginBottom: 16,
-  },
-  card: {
+  menuItem: {
+    padding: 20,
+    backgroundColor: "#f0f0f0",
+    marginBottom: 15,
+    borderRadius: 8,
     borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 8,
+    borderColor: "#e0e0e0",
   },
-  button: {
-    backgroundColor: "#000",
-    padding: 14,
-    borderRadius: 8,
-    marginTop: 24,
-  },
-  buttonText: {
-    color: "#fff",
+  menuItemText: {
+    fontSize: 18,
+    fontWeight: "500",
     textAlign: "center",
+  },
+  logoutButton: {
+    marginTop: 40,
+    alignSelf: "center",
+    padding: 10,
+  },
+  logoutText: {
+    color: "red",
     fontSize: 16,
   },
 });

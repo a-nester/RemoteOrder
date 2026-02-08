@@ -1,93 +1,170 @@
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
-import { useEffect } from "react";
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from "react-native";
 import { useAuthStore } from "../../store/auth.store";
 import { useOrdersStore } from "../../store/orders.store";
+import { useEffect, useState } from "react";
+import CreateOrderScreen from "./CreateOrderScreen";
+import ProductsScreen from "../common/ProductsScreen";
+
+type Screen = "menu" | "products";
 
 export default function ClientHomeScreen() {
-  const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
+  const user = useAuthStore((s) => s.user);
+  const [currentScreen, setCurrentScreen] = useState<Screen>("menu");
 
   const orders = useOrdersStore((s) => s.orders);
-  const loadOrders = useOrdersStore((s) => s.loadOrdersByClient);
+  const loadOrdersByClient = useOrdersStore((s) => s.loadOrdersByClient);
 
   useEffect(() => {
     if (user?.email) {
-      loadOrders(user.email);
+      loadOrdersByClient(user.email);
     }
   }, [user?.email]);
 
+  if (currentScreen === "products") {
+    return <ProductsScreen onBack={() => setCurrentScreen("menu")} role="client" />;
+  }
+
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <Text style={styles.title}>Client Home</Text>
 
       <Text style={styles.text}>
-        Вітаю{user?.email ? `, ${user.email}` : ""} 👋
+        Вітаю{user?.email ? `, ${user.email}` : ""}
       </Text>
 
-      <Text style={styles.subtitle}>Ваші замовлення</Text>
+      <TouchableOpacity
+        style={styles.menuItem}
+        onPress={() => setCurrentScreen("products")}
+      >
+        <Text style={styles.menuItemText}>🛍 Каталог товарів</Text>
+      </TouchableOpacity>
 
-      {orders.length === 0 && (
-        <Text style={styles.empty}>Замовлень поки немає</Text>
+      <CreateOrderScreen />
+
+      <Text style={styles.subtitle}>My Orders:</Text>
+
+      {orders.length === 0 ? (
+        <Text style={styles.emptyText}>No orders yet</Text>
+      ) : (
+        orders.map((o) => (
+          <View key={o.id} style={styles.order}>
+            <Text style={styles.orderId}>Order #{o.id.slice(0, 8)}</Text>
+            <View style={styles.row}>
+               <Text>Status:</Text>
+               <Text style={[styles.status, { color: getStatusColor(o.status) }]}>
+                 {o.status}
+               </Text>
+            </View>
+            <Text style={styles.date}>
+              {new Date(o.createdAt).toLocaleDateString()}
+            </Text>
+          </View>
+        ))
       )}
 
-      {orders.map((order) => (
-        <View key={order.id} style={styles.card}>
-          <Text>№ {order.id}</Text>
-          <Text>Статус: {order.status}</Text>
-        </View>
-      ))}
-
-      <TouchableOpacity style={styles.button} onPress={logout}>
-        <Text style={styles.buttonText}>Log out</Text>
+      <TouchableOpacity style={styles.logout} onPress={logout}>
+        <Text style={styles.logoutText}>Log out</Text>
       </TouchableOpacity>
-    </View>
+    </ScrollView>
   );
+}
+
+function getStatusColor(status: string) {
+  switch (status) {
+    case "new": return "blue";
+    case "in_progress": return "orange";
+    case "done": return "green";
+    default: return "gray";
+  }
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: "#fff",
+  },
+  content: {
     padding: 16,
-    justifyContent: "center",
+    paddingBottom: 40,
   },
   title: {
-    fontSize: 28,
-    fontWeight: "600",
-    marginBottom: 12,
-    textAlign: "center",
+    fontSize: 26,
+    fontWeight: "700",
+    marginBottom: 8,
+    color: "#111",
   },
   text: {
+    fontSize: 16,
+    marginBottom: 24,
+    color: "#444",
+  },
+  menuItem: {
+    backgroundColor: "#F3F4F6",
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 24,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+  },
+  menuItemText: {
     fontSize: 18,
-    marginBottom: 4,
-    textAlign: "center",
+    fontWeight: "600",
+    color: "#000",
   },
   subtitle: {
-    fontSize: 16,
-    color: "#666",
-    marginBottom: 16,
-    textAlign: "center",
-  },
-  empty: {
-    textAlign: "center",
-    color: "#999",
-    marginBottom: 16,
-  },
-  card: {
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 8,
-  },
-  button: {
-    backgroundColor: "#000",
-    padding: 14,
-    borderRadius: 8,
+    fontSize: 20,
+    fontWeight: "600",
     marginTop: 24,
+    marginBottom: 12,
+    color: "#111",
   },
-  buttonText: {
+  order: {
+    padding: 16,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    borderRadius: 12,
+    marginBottom: 12,
+    backgroundColor: "#fff",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  orderId: {
+    fontWeight: "bold",
+    fontSize: 16,
+    marginBottom: 4,
+  },
+  row: {
+    flexDirection: "row",
+    gap: 8,
+    marginBottom: 4,
+  },
+  status: {
+    fontWeight: "600",
+    textTransform: "capitalize",
+  },
+  date: {
+    fontSize: 12,
+    color: "#888",
+  },
+  emptyText: {
+    color: "#888",
+    fontStyle: "italic",
+  },
+  logout: {
+    marginTop: 32,
+    padding: 16,
+    backgroundColor: "#EF4444",
+    borderRadius: 12,
+  },
+  logoutText: {
     color: "#fff",
     textAlign: "center",
     fontSize: 16,
+    fontWeight: "600",
   },
 });

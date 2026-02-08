@@ -13,7 +13,11 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSPhotoLibraryUsageDescription": "The app needs access to your photos to let you upload product images.",
+        "NSCameraUsageDescription": "The app needs access to your camera to let you take photos of products."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -27,7 +31,13 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-sqlite"
+      "expo-sqlite",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "The app accesses your photos to let you upload product images."
+        }
+      ]
     ]
   }
 }
