@@ -290,4 +290,63 @@ export const ProductsService = {
             console.error("Sync failed:", error);
         }
     },
+
+    /**
+     * SET PRICE (Journal)
+     */
+    async setProductPrice(
+        productId: string,
+        price: number,
+        priceTypeId?: string,
+        reason?: string,
+        effectiveDate?: Date
+    ): Promise<void> {
+        try {
+            const response = await fetch(`https://remoteorder-server.onrender.com/api/admin/prices/set`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "x-admin-secret": ADMIN_SECRET,
+                },
+                body: JSON.stringify({
+                    productId,
+                    price,
+                    priceTypeId,
+                    reason,
+                    effectiveDate: effectiveDate?.toISOString()
+                })
+            });
+
+            if (!response.ok) {
+                const text = await response.text();
+                throw new Error(`Failed to set price: ${response.statusText} ${text}`);
+            }
+        } catch (error) {
+            console.error("Error setting price:", error);
+            throw error;
+        }
+    },
+
+    /**
+     * GET PRICE HISTORY
+     */
+    async getProductPriceHistory(productId: string): Promise<any[]> {
+        try {
+            const response = await fetch(`https://remoteorder-server.onrender.com/api/admin/prices/history/${productId}`, {
+                method: "GET",
+                headers: {
+                    "x-admin-secret": ADMIN_SECRET,
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`Failed to fetch price history: ${response.statusText}`);
+            }
+
+            return await response.json();
+        } catch (error) {
+            console.error("Error getting price history:", error);
+            throw error;
+        }
+    }
 };

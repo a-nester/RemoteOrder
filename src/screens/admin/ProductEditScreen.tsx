@@ -9,6 +9,7 @@ import {
   Alert,
   Image,
   ActivityIndicator,
+  Modal,
 } from "react-native";
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from "expo-image-picker";
@@ -18,6 +19,9 @@ import { Product } from "../../types/product";
 import { ProductsService } from "../../services/products.service";
 import { ImageService } from "../../services/image.service";
 import { useProductsStore } from "../../store/products.store";
+import { PriceChangeModal } from "./components/PriceChangeModal";
+import { PriceHistoryList } from "./components/PriceHistoryList";
+import { PriceHistoryEntry } from "../../types/priceHistory";
 
 interface Props {
   product?: Product;
@@ -52,6 +56,62 @@ export default function ProductEditScreen({ product, onBack, onSave }: Props) {
   const [imageUri, setImageUri] = useState<string | null>(product?.localImagePath || null);
   const [loading, setLoading] = useState(false);
   const sync = useProductsStore(s => s.sync);
+
+  // Price History Logic
+  const [history, setHistory] = useState<PriceHistoryEntry[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedSlug, setSelectedSlug] = useState<string>('standard');
+  const [selectedPriceName, setSelectedPriceName] = useState<string>('Standard');
+
+  useEffect(() => {
+      if (product?.id) {
+          fetchHistory();
+      }
+  }, [product?.id]);
+
+  const fetchHistory = async () => {
+      if (!product?.id) return;
+      try {
+          setHistoryLoading(true);
+          const data = await ProductsService.getProductPriceHistory(product.id);
+          setHistory(data);
+      } catch (e) {
+          console.error("Failed to load history", e);
+      } finally {
+          setHistoryLoading(false);
+      }
+  };
+
+  const openPriceModal = (slug: string, name: string) => {
+      if (!isEditing) {
+          Alert.alert("Save First", "Please save the product before adding journal entries.");
+          return;
+      }
+      setSelectedSlug(slug);
+      setSelectedPriceName(name);
+      setModalVisible(true);
+  };
+
+  const handlePriceJournalSave = async (newPrice: number, reason: string) => {
+      if (!product?.id) return;
+            // Find priceTypeId for the slug (if not standard)
+      let priceTypeId: string | undefined;
+      if (selectedSlug !== 'standard') {
+          const type = priceTypes.find(pt => pt.slug === selectedSlug);
+          priceTypeId = type?.id;
+      }
+
+      await ProductsService.setProductPrice(product.id, newPrice, priceTypeId, reason);
+      
+      // Update local state UI
+      setPrices(prev => ({ ...prev, [selectedSlug]: newPrice.toString() }));
+      
+      // Refresh history
+      fetchHistory();
+      // Sync in background to update local DB fully?
+      sync();
+  };
 
   const handleSave = async () => {
     try {
@@ -238,6 +298,8 @@ export default function ProductEditScreen({ product, onBack, onSave }: Props) {
         </View>
 
         <Text style={styles.sectionTitle}>Prices</Text>
+        <Text style={styles.helperText}>Use "Log Change" to record an official price change with a reason.</Text>
+        
         {/* Render Standard Price - always active */}
         <View style={styles.priceRow}>
             <Text style={styles.priceLabel}>standard</Text>
@@ -248,6 +310,11 @@ export default function ProductEditScreen({ product, onBack, onSave }: Props) {
                 keyboardType="numeric"
                 placeholder="0"
             />
+            {isEditing && (
+                <TouchableOpacity style={styles.logChangeBtn} onPress={() => openPriceModal('standard', 'Standard')}>
+                    <Text style={styles.logChangeText}>Log Change</Text>
+                </TouchableOpacity>
+            )}
         </View>
 
         {/* Render Dynamic Price Types */}
@@ -261,9 +328,23 @@ export default function ProductEditScreen({ product, onBack, onSave }: Props) {
                     keyboardType="numeric"
                     placeholder="0"
                 />
+                 {isEditing && (
+                    <TouchableOpacity style={styles.logChangeBtn} onPress={() => openPriceModal(pt.slug, pt.name)}>
+                        <Text style={styles.logChangeText}>Log Change</Text>
+                    </TouchableOpacity>
+                )}
             </View>
         ))}
-        {/* Removed "Add Price" manual input in favor of Price Management */}
+
+        {isEditing && (
+            <View style={styles.historySection}>
+                {historyLoading ? (
+                    <ActivityIndicator />
+                ) : (
+                    <PriceHistoryList history={history} />
+                )}
+            </View>
+        )}
 
         {isEditing && (
             <TouchableOpacity style={styles.deleteProductBtn} onPress={handleDeleteProduct}>
@@ -272,6 +353,18 @@ export default function ProductEditScreen({ product, onBack, onSave }: Props) {
         )}
 
       </ScrollView>
+
+      {/* Modal for Price Journal */}
+      <Modal visible={modalVisible} transparent animationType="slide">
+            <PriceChangeModal 
+                visible={modalVisible}
+                onClose={() => setModalVisible(false)}
+                onSave={handlePriceJournalSave}
+                currentPrice={Number(prices[selectedSlug] || 0)}
+                priceTypeName={selectedPriceName}
+            />
+      </Modal>
+
     </SafeAreaView>
   );
 }
@@ -334,12 +427,18 @@ const styles = StyleSheet.create({
       fontSize: 16,
       fontWeight: "bold",
       marginTop: 8,
+      marginBottom: 4,
+  },
+  helperText: {
+      fontSize: 12,
+      color: "#64748B",
       marginBottom: 12,
   },
   priceRow: {
       flexDirection: "row",
       alignItems: "center",
       marginBottom: 12,
+      gap: 8,
   },
   priceLabel: {
       flex: 1,
@@ -355,20 +454,21 @@ const styles = StyleSheet.create({
       width: 100,
       textAlign: "right",
   },
-  addPriceRow: {
-      flexDirection: "row",
-      gap: 8,
-      marginTop: 8,
-  },
-  addBtn: {
-      backgroundColor: "#10B981",
-      padding: 12,
+  logChangeBtn: {
+      backgroundColor: "#E0F2FE",
+      paddingVertical: 8,
+      paddingHorizontal: 12,
       borderRadius: 8,
-      justifyContent: "center",
+      borderWidth: 1,
+      borderColor: "#BAE6FD",
   },
-  addBtnText: {
-      color: "#fff",
-      fontWeight: "600",
+  logChangeText: {
+      color: "#0369A1",
+      fontSize: 12,
+      fontWeight: '600',
+  },
+  historySection: {
+      marginTop: 24,
   },
   imageSection: {
       alignItems: "center",
