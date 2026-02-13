@@ -1,4 +1,5 @@
 // export const API_URL = "https://remoteorder-server.onrender.com/api"; 
-export const API_URL = "http://localhost:3000/api";
-export const API_BASE_URL = API_URL;
+// Use 10.0.2.2 for Android Emulator, localhost for iOS Simulator, or LAN IP for physical device
+// To make it work on both, LAN IP is safest if on same network.
+export const API_URL = "http://192.168.1.101:3000/api";
 export const ADMIN_SECRET = "secure-admin-key-123";

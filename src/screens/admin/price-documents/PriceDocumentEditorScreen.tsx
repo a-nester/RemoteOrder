@@ -179,11 +179,25 @@ export default function PriceDocumentEditorScreen({ onBack, documentId }: Props)
     };
 
     const SelectionModal = ({ visible, onClose, title, options, onSelect }: any) => (
-// ...
+        <Modal visible={visible} transparent animationType="slide">
+            <View style={styles.modalParams}>
+                <View style={styles.modalContent}>
+                    <Text style={styles.modalTitle}>{title}</Text>
+                    {options.map((opt: any) => (
+                        <TouchableOpacity key={opt.id} style={styles.option} onPress={() => { onSelect(opt.id); onClose(); }}>
+                            <Text style={styles.optionText}>{opt.name}</Text>
+                        </TouchableOpacity>
+                    ))}
+                    <TouchableOpacity style={styles.cancelButton} onPress={onClose}>
+                        <Text style={styles.cancelText}>Cancel</Text>
+                    </TouchableOpacity>
+                </View>
+            </View>
+        </Modal>
     );
 
     if (showProductSelector) {
-// ...
+        return <ProductsScreen onBack={() => setShowProductSelector(false)} onSelectProduct={handleAddProduct} role="admin" />;
     }
 
     const currentTargetName = priceTypes.find(t => t.id === targetPriceTypeId)?.name || 'Select...';
