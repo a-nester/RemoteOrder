@@ -71,6 +71,10 @@ export default function PriceDocumentEditorScreen({ onBack, documentId }: Props)
         }
     };
 
+    const removeItem = (productId: string) => {
+        setItems(prev => prev.filter(i => i.productId !== productId));
+    };
+
     const handleSave = async (apply = false) => {
         if (!targetPriceTypeId) {
             Alert.alert('Validation', 'Please select a target price type');
@@ -101,9 +105,6 @@ export default function PriceDocumentEditorScreen({ onBack, documentId }: Props)
             }
 
             // Save Items
-            // In a real app we might optimize this to only send changes, 
-            // but for now we send all items as per the controller implementation.
-            // We need to map items to { productId, price }
             const itemsPayload = items.map(i => ({ productId: i.productId, price: i.price }));
             await PriceDocumentsService.updateDocumentItems(docId!, itemsPayload);
 
@@ -111,7 +112,22 @@ export default function PriceDocumentEditorScreen({ onBack, documentId }: Props)
                 await PriceDocumentsService.applyDocument(docId!);
                 Alert.alert('Success', 'Prices applied successfully!', [{ text: 'OK', onPress: onBack }]);
             } else {
-                Alert.alert('Success', 'Document saved.', [{ text: 'OK', onPress: onBack }]);
+                // Allow user to stay or go back
+                if (!documentId) {
+                     // If it was a new document, we should probably stay and switch to edit mode (technically we just saved items, 
+                     // but the parent thinks we are creating. 
+                     // Ideally we should replace the screen logic to "Edit" mode, but navigation stack is simpler to just Back.
+                     // However, better UX is to Ask.
+                     Alert.alert('Success', 'Document saved.', [
+                         { text: 'Keep Editing', style: 'cancel' },
+                         { text: 'Go Back', onPress: onBack }
+                     ]);
+                } else {
+                     Alert.alert('Success', 'Document updated.', [
+                         { text: 'Keep Editing', style: 'cancel' },
+                         { text: 'Go Back', onPress: onBack }
+                     ]);
+                }
             }
         } catch (error: any) {
             Alert.alert('Error', error.message);
@@ -119,6 +135,7 @@ export default function PriceDocumentEditorScreen({ onBack, documentId }: Props)
             setSaving(false);
         }
     };
+    
 
     const handleAddProduct = (product: any) => {
         // Check if already exists
@@ -162,25 +179,11 @@ export default function PriceDocumentEditorScreen({ onBack, documentId }: Props)
     };
 
     const SelectionModal = ({ visible, onClose, title, options, onSelect }: any) => (
-        <Modal visible={visible} transparent animationType="slide">
-            <View style={styles.modalParams}>
-                <View style={styles.modalContent}>
-                    <Text style={styles.modalTitle}>{title}</Text>
-                    {options.map((opt: any) => (
-                        <TouchableOpacity key={opt.id} style={styles.option} onPress={() => { onSelect(opt.id); onClose(); }}>
-                            <Text style={styles.optionText}>{opt.name}</Text>
-                        </TouchableOpacity>
-                    ))}
-                    <TouchableOpacity style={styles.cancelButton} onPress={onClose}>
-                        <Text style={styles.cancelText}>Cancel</Text>
-                    </TouchableOpacity>
-                </View>
-            </View>
-        </Modal>
+// ...
     );
 
     if (showProductSelector) {
-        return <ProductsScreen onBack={() => setShowProductSelector(false)} onSelectProduct={handleAddProduct} role="admin" />;
+// ...
     }
 
     const currentTargetName = priceTypes.find(t => t.id === targetPriceTypeId)?.name || 'Select...';
@@ -199,6 +202,7 @@ export default function PriceDocumentEditorScreen({ onBack, documentId }: Props)
 
             {/* Document Details (Context Menus) */}
             <View style={styles.form}>
+                {/* ... fields ... */}
                 <View style={styles.row}>
                     <Text style={styles.label}>Date:</Text>
                     <Text style={styles.value}>{date.toLocaleDateString()}</Text>
@@ -250,7 +254,7 @@ export default function PriceDocumentEditorScreen({ onBack, documentId }: Props)
                 <View style={styles.listHeader}>
                     <Text style={styles.colsName}>Product</Text>
                     <Text style={styles.colsPrice}>Price</Text>
-                    <View style={{ width: 40 }} />
+                     <View style={{ width: 40 }} />
                 </View>
                 <FlatList
                     data={items}
@@ -268,10 +272,19 @@ export default function PriceDocumentEditorScreen({ onBack, documentId }: Props)
                                 keyboardType="numeric"
                                 editable={status !== 'APPLIED'}
                             />
+                            {status === 'DRAFT' && (
+                                <TouchableOpacity 
+                                    style={styles.deleteButton} 
+                                    onPress={() => removeItem(item.productId)}
+                                >
+                                    <Text style={styles.deleteButtonText}>×</Text>
+                                </TouchableOpacity>
+                            )}
                         </View>
                     )}
                 />
             </View>
+
 
             {/* Footer Actions */}
             <View style={styles.footer}>
@@ -383,5 +396,11 @@ const styles = StyleSheet.create({
     cancelButton: { marginTop: 16, padding: 16, backgroundColor: '#F1F5F9', borderRadius: 8 },
     cancelText: { textAlign: 'center', fontWeight: '600', color: '#64748B' },
     
-    loader: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.7)' }
+    loader: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.7)' },
+    
+    deleteButton: {
+        marginLeft: 12, width: 32, height: 32, borderRadius: 16, backgroundColor: '#FEE2E2',
+        justifyContent: 'center', alignItems: 'center'
+    },
+    deleteButtonText: { color: '#EF4444', fontSize: 18, fontWeight: 'bold', marginTop: -2 }
 });
