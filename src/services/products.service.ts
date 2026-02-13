@@ -2,10 +2,15 @@ import { Product } from "../types/product";
 import { bulkUpsertProducts, getAllProducts, updateProductImage, getLastSyncTime, setLastSyncTime, deleteProduct as deleteLocalProduct } from "../db/productsDb";
 import { ImageService } from "./image.service";
 
-const API_URL = "https://remoteorder-server.onrender.com/api/products";
-const ADMIN_API_URL = "https://remoteorder-server.onrender.com/api/admin/products";
+import { API_URL, ADMIN_SECRET } from "../constants/api";
 
-const ADMIN_SECRET = "secure-admin-key-123";
+// Remove local redeclarations if they match the imported names, or mapping them
+// The existing code uses API_URL for products endpoint specifically?
+// Original: const API_URL = "https.../api/products";
+// We should change it to use the base API_URL from constants.
+
+const PRODUCTS_API_URL = `${API_URL}/products`;
+const ADMIN_API_URL = `${API_URL}/admin/products`;
 
 export const ProductsService = {
     /**
@@ -302,7 +307,7 @@ export const ProductsService = {
         effectiveDate?: Date
     ): Promise<void> {
         try {
-            const response = await fetch(`https://remoteorder-server.onrender.com/api/admin/prices/set`, {
+            const response = await fetch(`${ADMIN_API_URL}/prices/set`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -332,7 +337,7 @@ export const ProductsService = {
      */
     async getProductPriceHistory(productId: string): Promise<any[]> {
         try {
-            const response = await fetch(`https://remoteorder-server.onrender.com/api/admin/prices/history/${productId}`, {
+            const response = await fetch(`${ADMIN_API_URL}/prices/history/${productId}`, {
                 method: "GET",
                 headers: {
                     "x-admin-secret": ADMIN_SECRET,

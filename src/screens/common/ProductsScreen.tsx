@@ -16,12 +16,13 @@ import { Product } from "../../types/product";
 interface Props {
   onBack: () => void;
   role?: "admin" | "manager" | "client";
+  onSelectProduct?: (product: Product) => void;
 }
 
 import ProductEditScreen from "../../screens/admin/ProductEditScreen";
 import PriceTypesScreen from "../../screens/admin/PriceTypesScreen";
 
-export default function ProductsScreen({ onBack, role = "client" }: Props) {
+export default function ProductsScreen({ onBack, role = "client", onSelectProduct }: Props) {
   const { products, loading } = useProductsStore();
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -75,11 +76,13 @@ export default function ProductsScreen({ onBack, role = "client" }: Props) {
       <TouchableOpacity 
         style={styles.cardContent}
         onPress={() => {
-            if (role === 'admin') {
+            if (onSelectProduct) {
+                onSelectProduct(item);
+            } else if (role === 'admin') {
                 setEditingProduct(item);
             }
         }}
-        activeOpacity={role === 'admin' ? 0.7 : 1}
+        activeOpacity={0.7}
       >
         <View style={styles.header}>
             <TouchableOpacity 

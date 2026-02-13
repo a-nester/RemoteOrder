@@ -1,9 +1,9 @@
 import { PriceType } from "../types/priceType";
 import { bulkUpsertPriceTypes, getAllPriceTypes, deletePriceType as deleteLocalPriceType } from "../db/productsDb";
 
-// Re-using ADMIN_API_URL base, but strictly speaking we need to append endpoints
-const ADMIN_API_URL = "https://remoteorder-server.onrender.com/api/admin";
-const ADMIN_SECRET = "secure-admin-key-123";
+import { API_URL, ADMIN_SECRET } from "../constants/api";
+
+const ADMIN_API_URL = `${API_URL}/admin`;
 
 export const PriceTypesService = {
     /**

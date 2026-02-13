@@ -3,15 +3,18 @@ import { useState } from "react";
 import { useAuthStore } from "../../store/auth.store";
 import WarehouseListScreen from "./WarehouseListScreen";
 import ProductsScreen from "../common/ProductsScreen";
+import PriceDocumentsListScreen from "./price-documents/PriceDocumentsListScreen";
+import PriceDocumentEditorScreen from "./price-documents/PriceDocumentEditorScreen";
 import PriceEditorScreen from "./PriceEditorScreen";
 import PriceTypesScreen from "./PriceTypesScreen";
 
-type Screen = "menu" | "warehouses" | "products" | "priceEditor" | "priceTypes";
+type Screen = "menu" | "warehouses" | "products" | "priceEditor" | "priceTypes" | "priceDocuments" | "priceDocumentEditor";
 
 export default function AdminHomeScreen() {
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
   const [currentScreen, setCurrentScreen] = useState<Screen>("menu");
+  const [selectedDocumentId, setSelectedDocumentId] = useState<string | undefined>(undefined);
 
   if (currentScreen === "warehouses") {
     return <WarehouseListScreen onBack={() => setCurrentScreen("menu")} />;
@@ -37,6 +40,31 @@ export default function AdminHomeScreen() {
       return <PriceTypesScreen onBack={() => setCurrentScreen("priceEditor")} />;
   }
 
+  if (currentScreen === "priceDocuments") {
+      return (
+        <PriceDocumentsListScreen 
+            onBack={() => setCurrentScreen("menu")}
+            onCreateDocument={() => {
+                setSelectedDocumentId(undefined);
+                setCurrentScreen("priceDocumentEditor");
+            }}
+            onSelectDocument={(doc) => {
+                setSelectedDocumentId(doc.id);
+                setCurrentScreen("priceDocumentEditor");
+            }}
+        />
+      );
+  }
+
+  if (currentScreen === "priceDocumentEditor") {
+      return (
+        <PriceDocumentEditorScreen
+            onBack={() => setCurrentScreen("priceDocuments")}
+            documentId={selectedDocumentId}
+        />
+      );
+  }
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Admin Panel</Text>
@@ -58,12 +86,19 @@ export default function AdminHomeScreen() {
       >
         <Text style={styles.menuItemText}>📦 Список товарів</Text>
       </TouchableOpacity>
+      
+      <TouchableOpacity
+        style={styles.menuItem}
+        onPress={() => setCurrentScreen("priceDocuments")}
+      >
+        <Text style={styles.menuItemText}>📝 Журнал установки цін (Documents)</Text>
+      </TouchableOpacity>
 
       <TouchableOpacity
         style={styles.menuItem}
         onPress={() => setCurrentScreen("priceEditor")}
       >
-        <Text style={styles.menuItemText}>💲 Редактор цін</Text>
+        <Text style={styles.menuItemText}>💲 Редактор цін (Old)</Text>
       </TouchableOpacity>
 
       <TouchableOpacity style={styles.logoutButton} onPress={logout}>
