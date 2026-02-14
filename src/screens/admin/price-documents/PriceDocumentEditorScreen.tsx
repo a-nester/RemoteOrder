@@ -23,6 +23,7 @@ export default function PriceDocumentEditorScreen({ onBack, documentId }: Props)
     const [inputMethod, setInputMethod] = useState<'MANUAL' | 'FORMULA'>('MANUAL');
     const [sourcePriceTypeId, setSourcePriceTypeId] = useState<string | null>(null);
     const [markupPercentage, setMarkupPercentage] = useState<string>('0');
+    const [roundingMethod, setRoundingMethod] = useState<string>('NONE');
     const [status, setStatus] = useState<'DRAFT' | 'APPLIED'>('DRAFT');
 
     // Items
@@ -36,6 +37,7 @@ export default function PriceDocumentEditorScreen({ onBack, documentId }: Props)
     const [targetTypeModalVisible, setTargetTypeModalVisible] = useState(false);
     const [sourceTypeModalVisible, setSourceTypeModalVisible] = useState(false);
     const [methodModalVisible, setMethodModalVisible] = useState(false);
+    const [roundingModalVisible, setRoundingModalVisible] = useState(false);
 
     const [isEditing, setIsEditing] = useState(!documentId);
 
@@ -62,6 +64,7 @@ export default function PriceDocumentEditorScreen({ onBack, documentId }: Props)
                 setInputMethod(doc.inputMethod);
                 setSourcePriceTypeId(doc.sourcePriceTypeId || null);
                 setMarkupPercentage(doc.markupPercentage?.toString() || '0');
+                setRoundingMethod(doc.roundingMethod || 'NONE');
                 setStatus(doc.status);
                 setItems(doc.items || []);
                 setIsEditing(false); // Start in view mode for existing docs
@@ -73,6 +76,50 @@ export default function PriceDocumentEditorScreen({ onBack, documentId }: Props)
             setLoading(false);
         }
     };
+
+    // Get products to access source prices for recalculation
+    const { products, loadProducts } = useProductsStore();
+
+    useEffect(() => {
+        loadProducts();
+    }, []);
+
+    // Helper to round price
+    const roundPrice = (price: number, method: string) => {
+        switch (method) {
+            case 'NEAREST_1_00': return Math.round(price);
+            case 'NEAREST_0_50': return Math.round(price * 2) / 2;
+            case 'NEAREST_0_10': return Math.round(price * 10) / 10;
+            case 'NEAREST_0_05': return Math.round(price * 20) / 20;
+            default: return Number(price.toFixed(2));
+        }
+    };
+
+    // Recalculate prices when formula settings change
+    useEffect(() => {
+        if (!isEditing || inputMethod !== 'FORMULA' || !sourcePriceTypeId) return;
+
+        const sourceType = priceTypes.find(t => t.id === sourcePriceTypeId);
+        if (!sourceType) return;
+
+        const markup = parseFloat(markupPercentage);
+        if (isNaN(markup)) return;
+
+        setItems(prevItems => prevItems.map(item => {
+            const product = products.find(p => p.id === item.productId);
+            if (!product || !product.prices) return item;
+
+            const sourcePrice = product.prices[sourceType.slug];
+            if (sourcePrice === undefined) return item;
+
+            let newPrice = Number(sourcePrice) * (1 + markup / 100);
+            newPrice = roundPrice(newPrice, roundingMethod);
+            
+            return { ...item, price: newPrice };
+        }));
+
+    }, [inputMethod, sourcePriceTypeId, markupPercentage, roundingMethod, isEditing, products, priceTypes]);
+
 
     const removeItem = (productId: string) => {
         setItems(prev => prev.filter(i => i.productId !== productId));
@@ -97,6 +144,7 @@ export default function PriceDocumentEditorScreen({ onBack, documentId }: Props)
                 inputMethod,
                 sourcePriceTypeId: inputMethod === 'FORMULA' ? sourcePriceTypeId! : undefined,
                 markupPercentage: inputMethod === 'FORMULA' ? parseFloat(markupPercentage) : undefined,
+                roundingMethod: inputMethod === 'FORMULA' ? roundingMethod : undefined,
             };
 
             let docId = documentId;
@@ -252,6 +300,16 @@ export default function PriceDocumentEditorScreen({ onBack, documentId }: Props)
                                 editable={isEditing}
                             />
                         </View>
+                        <TouchableOpacity style={styles.row} onPress={() => setRoundingModalVisible(true)} disabled={!isEditing}>
+                            <Text style={styles.label}>Rounding:</Text>
+                            <Text style={styles.value}>{
+                                roundingMethod === 'NONE' ? 'None (0.01)' : 
+                                roundingMethod === 'NEAREST_0_05' ? 'To 0.05' :
+                                roundingMethod === 'NEAREST_0_10' ? 'To 0.10' :
+                                roundingMethod === 'NEAREST_0_50' ? 'To 0.50' :
+                                roundingMethod === 'NEAREST_1_00' ? 'To 1.00' : roundingMethod
+                            }</Text>
+                        </TouchableOpacity>
                     </>
                 )}
                 
@@ -322,6 +380,19 @@ export default function PriceDocumentEditorScreen({ onBack, documentId }: Props)
                 options={[{ id: 'MANUAL', name: 'Manual Entry' }, { id: 'FORMULA', name: 'Markup by Formula' }]}
                 onClose={() => setMethodModalVisible(false)}
                 onSelect={(id: any) => setInputMethod(id)}
+            />
+            <SelectionModal 
+                visible={roundingModalVisible} 
+                title="Select Rounding Method" 
+                options={[
+                    { id: 'NONE', name: 'None (0.01)' },
+                    { id: 'NEAREST_0_05', name: 'To 0.05' },
+                    { id: 'NEAREST_0_10', name: 'To 0.10' },
+                    { id: 'NEAREST_0_50', name: 'To 0.50' },
+                    { id: 'NEAREST_1_00', name: 'To 1.00' },
+                ]}
+                onClose={() => setRoundingModalVisible(false)}
+                onSelect={setRoundingMethod}
             />
             <SelectionModal 
                 visible={targetTypeModalVisible} 

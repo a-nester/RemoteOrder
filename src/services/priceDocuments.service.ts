@@ -19,6 +19,7 @@ export interface PriceDocument {
     sourcePriceTypeId?: string;
     sourcePriceTypeName?: string;
     markupPercentage?: number;
+    roundingMethod?: string;
     comment?: string;
     items?: PriceDocumentItem[];
     createdAt: string;
