@@ -22,7 +22,11 @@ export const ProductsService = {
             const url = since ? `${PRODUCTS_API_URL}?since=${since}` : PRODUCTS_API_URL;
             console.log(`Fetching products from: ${url}`);
 
-            const response = await fetch(url);
+            const response = await fetch(url, {
+                headers: {
+                    "x-admin-secret": ADMIN_SECRET
+                }
+            });
             if (!response.ok) {
                 const text = await response.text();
                 // ...
