@@ -50,6 +50,17 @@ export default function ProductEditScreen({ product, onBack, onSave }: Props) {
       : { standard: "0" }
   );
 
+  // Sync prices when product updates (e.g. after background sync)
+  useEffect(() => {
+      if (product?.prices) {
+          const newPrices = Object.entries(product.prices).reduce((acc, [k, v]) => {
+              acc[k] = v.toString();
+              return acc;
+          }, {} as Record<string, string>);
+          setPrices(prev => ({ ...prev, ...newPrices }));
+      }
+  }, [product]);
+
   const [unit, setUnit] = useState(product?.unit || "шт");
   const [category, setCategory] = useState(product?.category || "Інше");
 
@@ -341,7 +352,7 @@ export default function ProductEditScreen({ product, onBack, onSave }: Props) {
                 {historyLoading ? (
                     <ActivityIndicator />
                 ) : (
-                    <PriceHistoryList history={history} />
+                    <PriceHistoryList history={history} priceTypes={priceTypes} />
                 )}
             </View>
         )}

@@ -1,28 +1,30 @@
 import React from 'react';
 import { View, Text, StyleSheet, FlatList } from 'react-native';
 import { PriceHistoryEntry } from '../../../types/priceHistory';
+import { PriceType } from '../../../types/priceType';
 
 interface Props {
     history: PriceHistoryEntry[];
+    priceTypes?: PriceType[];
 }
 
-export const PriceHistoryList: React.FC<Props> = ({ history }) => {
-    if (!history || history.length === 0) {
-        return (
-            <View style={styles.emptyContainer}>
-                <Text style={styles.emptyText}>No price history available.</Text>
-            </View>
-        );
-    }
-
+export const PriceHistoryList: React.FC<Props> = ({ history, priceTypes }) => {
+    // ...
     const renderItem = ({ item }: { item: PriceHistoryEntry }) => {
         const date = new Date(item.effectiveDate).toLocaleDateString() + ' ' + new Date(item.effectiveDate).toLocaleTimeString();
-        const priceType = item.priceTypeId ? `(${item.priceTypeId})` : '(Standard)'; // In real app map ID to name
+        
+        let typeName = 'Standard';
+        if (item.priceTypeId) {
+            const found = priceTypes?.find(pt => pt.id === item.priceTypeId);
+            typeName = found ? found.name : 'Custom';
+        }
+        
+        const priceLabel = `(${typeName})`;
         
         return (
             <View style={styles.itemContainer}>
                 <View style={styles.header}>
-                    <Text style={styles.date}>{date}</Text>
+                    <Text style={styles.date}>{date} <Text style={{fontWeight: 'bold'}}>{priceLabel}</Text></Text>
                     <Text style={styles.priceChange}>
                          {item.oldPrice} ➔ <Text style={styles.newPrice}>{item.newPrice}</Text>
                     </Text>
