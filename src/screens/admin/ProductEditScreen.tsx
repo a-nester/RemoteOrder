@@ -29,15 +29,26 @@ interface Props {
   onSave: () => void;
 }
 
-export default function ProductEditScreen({ product, onBack, onSave }: Props) {
-  const isEditing = !!product;
+export default function ProductEditScreen({ product: initialProduct, onBack, onSave }: Props) {
+  const isEditing = !!initialProduct;
+  
+  // Use store to get live product updates if editing
+  const liveProduct = useProductsStore(state => 
+    initialProduct ? state.products.find(p => p.id === initialProduct.id) : undefined
+  );
+
+  // Fallback to initialProduct if liveProduct undefined (shouldn't happen if id exists)
+  const product = liveProduct || initialProduct;
+
   const [name, setName] = useState(product?.name || "");
   
   // Load available price types
   const [priceTypes, setPriceTypes] = useState<PriceType[]>([]);
 
   useEffect(() => {
-      setPriceTypes(getAllPriceTypes());
+      // Filter out 'standard' to avoid duplication with hardcoded field
+      const allTypes = getAllPriceTypes();
+      setPriceTypes(allTypes.filter(pt => pt.slug !== 'standard'));
   }, []);
 
   // Copy prices object or init default
