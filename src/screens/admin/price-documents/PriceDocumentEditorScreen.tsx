@@ -37,6 +37,8 @@ export default function PriceDocumentEditorScreen({ onBack, documentId }: Props)
     const [sourceTypeModalVisible, setSourceTypeModalVisible] = useState(false);
     const [methodModalVisible, setMethodModalVisible] = useState(false);
 
+    const [isEditing, setIsEditing] = useState(!documentId);
+
     useEffect(() => {
         loadData();
     }, []);
@@ -62,6 +64,7 @@ export default function PriceDocumentEditorScreen({ onBack, documentId }: Props)
                 setMarkupPercentage(doc.markupPercentage?.toString() || '0');
                 setStatus(doc.status);
                 setItems(doc.items || []);
+                setIsEditing(false); // Start in view mode for existing docs
             }
         } catch (error) {
             console.error(error);
@@ -112,22 +115,12 @@ export default function PriceDocumentEditorScreen({ onBack, documentId }: Props)
                 await PriceDocumentsService.applyDocument(docId!);
                 Alert.alert('Success', 'Prices applied successfully!', [{ text: 'OK', onPress: onBack }]);
             } else {
-                // Allow user to stay or go back
-                if (!documentId) {
-                     // If it was a new document, we should probably stay and switch to edit mode (technically we just saved items, 
-                     // but the parent thinks we are creating. 
-                     // Ideally we should replace the screen logic to "Edit" mode, but navigation stack is simpler to just Back.
-                     // However, better UX is to Ask.
-                     Alert.alert('Success', 'Document saved.', [
-                         { text: 'Keep Editing', style: 'cancel' },
-                         { text: 'Go Back', onPress: onBack }
-                     ]);
-                } else {
-                     Alert.alert('Success', 'Document updated.', [
-                         { text: 'Keep Editing', style: 'cancel' },
-                         { text: 'Go Back', onPress: onBack }
-                     ]);
-                }
+                // If saving without applying, verify if we want to stay in edit mode
+                setIsEditing(false); // Switch back to view mode after save
+                Alert.alert('Success', 'Document saved.', [
+                   { text: 'Keep Editing', onPress: () => setIsEditing(true) },
+                   { text: 'OK', onPress: () => { /* Stay in view mode */ } }
+                ]);
             }
         } catch (error: any) {
             Alert.alert('Error', error.message);
@@ -208,10 +201,18 @@ export default function PriceDocumentEditorScreen({ onBack, documentId }: Props)
             {/* Header */}
             <View style={styles.header}>
                 <TouchableOpacity onPress={onBack}><Text style={styles.backText}>Back</Text></TouchableOpacity>
-                <Text style={styles.title}>{documentId ? 'Edit Document' : 'New Document'}</Text>
-                <TouchableOpacity onPress={() => handleSave(false)} disabled={saving || status === 'APPLIED'}>
-                    <Text style={[styles.saveText, status === 'APPLIED' && styles.disabledText]}>Save</Text>
-                </TouchableOpacity>
+                <Text style={styles.title}>{documentId ? (isEditing ? 'Editing Document' : 'View Document') : 'New Document'}</Text>
+                
+                {/* Header Action Button */}
+                {!isEditing ? (
+                    <TouchableOpacity onPress={() => setIsEditing(true)}>
+                         <Text style={styles.saveText}>Edit</Text>
+                    </TouchableOpacity>
+                ) : (
+                    <TouchableOpacity onPress={() => handleSave(false)} disabled={saving || !isEditing}>
+                        {isEditing && <Text style={[styles.saveText, (!isEditing) && styles.disabledText]}>Save</Text>}
+                    </TouchableOpacity>
+                )}
             </View>
 
             {/* Document Details (Context Menus) */}
@@ -223,13 +224,13 @@ export default function PriceDocumentEditorScreen({ onBack, documentId }: Props)
                 </View>
 
                 {/* Input Method */}
-                <TouchableOpacity style={styles.row} onPress={() => setMethodModalVisible(true)} disabled={status === 'APPLIED'}>
+                <TouchableOpacity style={styles.row} onPress={() => setMethodModalVisible(true)} disabled={!isEditing}>
                     <Text style={styles.label}>Method:</Text>
                     <Text style={styles.value}>{inputMethod}</Text>
                 </TouchableOpacity>
 
                 {/* Target Price Type */}
-                <TouchableOpacity style={styles.row} onPress={() => setTargetTypeModalVisible(true)} disabled={status === 'APPLIED'}>
+                <TouchableOpacity style={styles.row} onPress={() => setTargetTypeModalVisible(true)} disabled={!isEditing}>
                     <Text style={styles.label}>Target Price:</Text>
                     <Text style={styles.value}>{currentTargetName}</Text>
                 </TouchableOpacity>
@@ -237,7 +238,7 @@ export default function PriceDocumentEditorScreen({ onBack, documentId }: Props)
                 {/* Formula Config */}
                 {inputMethod === 'FORMULA' && (
                     <>
-                        <TouchableOpacity style={styles.row} onPress={() => setSourceTypeModalVisible(true)} disabled={status === 'APPLIED'}>
+                        <TouchableOpacity style={styles.row} onPress={() => setSourceTypeModalVisible(true)} disabled={!isEditing}>
                             <Text style={styles.label}>Base Price:</Text>
                             <Text style={styles.value}>{currentSourceName}</Text>
                         </TouchableOpacity>
@@ -248,7 +249,7 @@ export default function PriceDocumentEditorScreen({ onBack, documentId }: Props)
                                 value={markupPercentage}
                                 onChangeText={setMarkupPercentage}
                                 keyboardType="numeric"
-                                editable={status !== 'APPLIED'}
+                                editable={isEditing}
                             />
                         </View>
                     </>
@@ -259,7 +260,7 @@ export default function PriceDocumentEditorScreen({ onBack, documentId }: Props)
                     placeholder="Comment..." 
                     value={comment} 
                     onChangeText={setComment} 
-                    editable={status !== 'APPLIED'}
+                    editable={isEditing}
                 />
             </View>
 
@@ -284,9 +285,9 @@ export default function PriceDocumentEditorScreen({ onBack, documentId }: Props)
                                 value={item.price.toString()}
                                 onChangeText={(text) => updateItemPrice(item.productId, text)}
                                 keyboardType="numeric"
-                                editable={status !== 'APPLIED'}
+                                editable={isEditing}
                             />
-                            {status === 'DRAFT' && (
+                            {isEditing && (
                                 <TouchableOpacity 
                                     style={styles.deleteButton} 
                                     onPress={() => removeItem(item.productId)}
@@ -302,7 +303,7 @@ export default function PriceDocumentEditorScreen({ onBack, documentId }: Props)
 
             {/* Footer Actions */}
             <View style={styles.footer}>
-                {status === 'DRAFT' && (
+                {isEditing && (
                     <>
                         <TouchableOpacity style={styles.addButton} onPress={() => setShowProductSelector(true)}>
                             <Text style={styles.addButtonText}>+ Add Item</Text>
