@@ -93,7 +93,12 @@ export default function ProductsScreen({ onBack, role = "client", onSelectProduc
             </TouchableOpacity>
           <Text style={styles.name}>{item.name}</Text>
           <Text style={styles.price}>
-            {(item.prices?.standard || Object.values(item.prices)[0] || 0).toFixed(2)} ₴ / {item.unit}
+            {(() => {
+                const standard = item.prices?.standard;
+                const firstPrice = item.prices ? Object.values(item.prices)[0] : 0;
+                const priceVal = standard !== undefined ? standard : firstPrice;
+                return (parseFloat(String(priceVal || 0)) || 0).toFixed(2);
+            })()} ₴ / {item.unit}
           </Text>
         </View>
       </TouchableOpacity>
