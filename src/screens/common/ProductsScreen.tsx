@@ -29,6 +29,20 @@ export default function ProductsScreen({ onBack, role = "client", onSelectProduc
   const [isCreating, setIsCreating] = useState(false);
   const [isManagingPrices, setIsManagingPrices] = useState(false);
 
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
+
+  const toggleCategory = (category: string) => {
+    setExpandedCategories(prev => {
+        const next = new Set(prev);
+        if (next.has(category)) {
+            next.delete(category);
+        } else {
+            next.add(category);
+        }
+        return next;
+    });
+  };
+
   const sections = useMemo(() => {
     const grouped = products.reduce((acc, product) => {
       const category = product.category || "Інше";
@@ -43,9 +57,11 @@ export default function ProductsScreen({ onBack, role = "client", onSelectProduc
       .sort()
       .map((category) => ({
         title: category,
-        data: grouped[category].sort((a, b) => a.name.localeCompare(b.name)),
+        data: expandedCategories.has(category) 
+            ? grouped[category].sort((a, b) => a.name.localeCompare(b.name))
+            : [],
       }));
-  }, [products]);
+  }, [products, expandedCategories]);
 
   if (isManagingPrices) {
       return (
@@ -109,11 +125,23 @@ export default function ProductsScreen({ onBack, role = "client", onSelectProduc
     section: { title },
   }: {
     section: { title: string };
-  }) => (
-    <View style={styles.sectionHeader}>
-      <Text style={styles.sectionTitle}>{title}</Text>
-    </View>
-  );
+  }) => {
+    const isExpanded = expandedCategories.has(title);
+    return (
+        <TouchableOpacity 
+            style={styles.sectionHeader}
+            onPress={() => toggleCategory(title)}
+            activeOpacity={0.7}
+        >
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Text style={styles.sectionTitle}>{title}</Text>
+                <Text style={{ fontSize: 18, color: '#475569' }}>
+                    {isExpanded ? "▲" : "▼"}
+                </Text>
+            </View>
+        </TouchableOpacity>
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -143,6 +171,7 @@ export default function ProductsScreen({ onBack, role = "client", onSelectProduc
           renderSectionHeader={renderSectionHeader}
           contentContainerStyle={styles.list}
           stickySectionHeadersEnabled={false}
+          extraData={expandedCategories}
           ListEmptyComponent={
             <Text style={styles.emptyText}>Список товарів порожній</Text>
           }
