@@ -75,6 +75,17 @@ const en = {
         priceType: "Price Type",
         selectPriceType: "Select Price Type",
         noGroup: "No Group"
+    },
+    action: {
+        selectClient: "Select Client"
+    },
+    order: {
+        create: "New Order"
+    },
+    status: {
+        NEW: "New",
+        ACCEPTED: "Accepted",
+        COMPLETED: "Completed"
     }
 };
 
@@ -93,7 +104,8 @@ const uk = {
         "search": "Пошук...",
         "actions": "Дії",
         "failedToLoad": "Не вдалося завантажити дані",
-        "failedToSave": "Не вдалося зберегти дані"
+        "failedToSave": "Не вдалося зберегти дані",
+        "addProduct": "Додати Товар"
     },
     "menu": {
         "dashboard": "Дашборд",
@@ -149,6 +161,9 @@ const uk = {
         "priceType": "Тип Ціни",
         "selectPriceType": "Оберіть Тип Ціни",
         "noGroup": "Без Групи"
+    },
+    "action": {
+        "selectClient": "Обрати Клієнта"
     },
     "order": {
         "create": "Нове Замовлення"

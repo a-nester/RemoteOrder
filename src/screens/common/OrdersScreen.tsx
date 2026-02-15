@@ -8,6 +8,10 @@ import { Order, OrderStatus } from "../../models/Order";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import OrderCreateScreen from "../orders/OrderCreateScreen";
+
+// ... inside component ...
+
 interface OrdersScreenProps {
     onBack: () => void;
 }
@@ -21,6 +25,9 @@ export default function OrdersScreen({ onBack }: OrdersScreenProps) {
     const [orders, setOrders] = useState<Order[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
+
+    // State for creating new order
+    const [isCreating, setIsCreating] = useState(false);
     
     // Default date range: current month
     const [startDate, setStartDate] = useState(() => {
@@ -56,7 +63,12 @@ export default function OrdersScreen({ onBack }: OrdersScreenProps) {
     }, [loadOrders]);
 
     const handleCreateOrder = () => {
-        Alert.alert(t('order.create'), "Functionality to create order to be implemented");
+        setIsCreating(true);
+    };
+
+    const handleSaveSuccess = () => {
+        setIsCreating(false);
+        loadOrders();
     };
 
     const handleEditOrder = (order: Order) => {
@@ -101,6 +113,10 @@ export default function OrdersScreen({ onBack }: OrdersScreenProps) {
         </View>
     );
 
+    if (isCreating) {
+        return <OrderCreateScreen onBack={() => setIsCreating(false)} onSaveSuccess={handleSaveSuccess} />;
+    }
+
     return (
         <View style={[styles.container, { paddingTop: insets.top }]}>
             {/* Header */}
@@ -116,7 +132,7 @@ export default function OrdersScreen({ onBack }: OrdersScreenProps) {
 
             {/* Filters */}
             <View style={styles.filtersContainer}>
-                {/* Simple Text Inputs for Date for now (YYYY-MM-DD) */}
+                {/* ... existing filters ... */}
                 <View style={styles.dateRow}>
                      <TextInput 
                         style={styles.dateInput}
