@@ -15,6 +15,7 @@ export default function CreateOrderScreen() {
       clientId: user.id.toString(),
       clientEmail: user.email,
       status: "draft",
+      total: 0,
       createdAt: Date.now(),
     });
   };

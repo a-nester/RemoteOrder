@@ -25,6 +25,7 @@ const en = {
         priceEditor: "Price Editor",
         priceSettings: "Price Settings",
         priceTypes: "Price Types",
+        counterparties: "Counterparties",
         orders: "Orders",
         settings: "Settings",
         signOut: "Sign Out"
@@ -55,6 +56,23 @@ const en = {
         targetPrice: "Target Price",
         applyPrices: "Apply Prices",
         applied: "APPLIED"
+    },
+    counterparties: {
+        title: "Counterparties",
+        newGroup: "New Group",
+        newCounterparty: "New Counterparty",
+        editCounterparty: "Edit Counterparty",
+        groupName: "Group Name",
+        name: "Name",
+        address: "Address",
+        phone: "Phone",
+        contactPerson: "Contact Person",
+        buyer: "Buyer",
+        seller: "Seller",
+        group: "Group",
+        priceType: "Price Type",
+        selectPriceType: "Select Price Type",
+        noGroup: "No Group"
     }
 };
 
@@ -79,6 +97,7 @@ const uk = {
         "priceEditor": "Редактор Цін",
         "priceSettings": "Установка цін",
         "priceTypes": "Типи цін",
+        "counterparties": "Контрагенти",
         "orders": "Замовлення",
         "settings": "Налаштування",
         "signOut": "Вихід"
@@ -109,6 +128,23 @@ const uk = {
         "targetPrice": "Вихідна Ціна",
         "applyPrices": "Застосувати Ціни",
         "applied": "ЗАСТОСОВАНО"
+    },
+    "counterparties": {
+        "title": "Контрагенти",
+        "newGroup": "Нова Група",
+        "newCounterparty": "Новий Контрагент",
+        "editCounterparty": "Редагування Контрагента",
+        "groupName": "Назва Групи",
+        "name": "Назва",
+        "address": "Адреса",
+        "phone": "Телефон",
+        "contactPerson": "Контактна Особа",
+        "buyer": "Покупець",
+        "seller": "Продавець",
+        "group": "Група",
+        "priceType": "Тип Ціни",
+        "selectPriceType": "Оберіть Тип Ціни",
+        "noGroup": "Без Групи"
     }
 };
 
@@ -135,7 +171,7 @@ const initI18n = async () => {
     const lng = await getLanguage();
 
     i18n.use(initReactI18next).init({
-        compatibilityJSON: 'v3',
+        compatibilityJSON: 'v4',
         resources: {
             en: { translation: en },
             uk: { translation: uk },

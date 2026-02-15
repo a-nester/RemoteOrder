@@ -12,13 +12,18 @@ import { useTranslation } from "react-i18next";
 import { useTheme } from "../../context/ThemeContext";
 import { Ionicons } from "@expo/vector-icons";
 
-type Screen = "menu" | "warehouses" | "products" | "priceEditorMenu" | "priceTypes" | "priceDocuments" | "priceDocumentEditor" | "settings";
+import { CounterpartiesListScreen } from "./counterparties/CounterpartiesListScreen";
+import { CounterpartyEditScreen } from "./counterparties/CounterpartyEditScreen";
+import { Counterparty } from "../../types/counterparty";
+
+type Screen = "menu" | "warehouses" | "products" | "priceEditorMenu" | "priceTypes" | "priceDocuments" | "priceDocumentEditor" | "settings" | "counterparties" | "counterpartyEdit";
 
 export default function AdminHomeScreen() {
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
   const [currentScreen, setCurrentScreen] = useState<Screen>("menu");
   const [selectedDocumentId, setSelectedDocumentId] = useState<string | undefined>(undefined);
+  const [selectedCounterparty, setSelectedCounterparty] = useState<Counterparty | undefined>(undefined);
   
   const { t } = useTranslation();
   const { colors } = useTheme();
@@ -31,6 +36,31 @@ export default function AdminHomeScreen() {
 
   if (currentScreen === "products") {
     return <ProductsScreen onBack={() => setCurrentScreen("menu")} role="admin" />;
+  }
+
+  if (currentScreen === "counterparties") {
+      return (
+          <CounterpartiesListScreen 
+              onBack={() => setCurrentScreen("menu")} 
+              onEdit={(cp) => {
+                  setSelectedCounterparty(cp);
+                  setCurrentScreen("counterpartyEdit");
+              }}
+              onCreate={() => {
+                  setSelectedCounterparty(undefined);
+                  setCurrentScreen("counterpartyEdit");
+              }}
+          />
+      );
+  }
+
+  if (currentScreen === "counterpartyEdit") {
+      return (
+          <CounterpartyEditScreen 
+              onBack={() => setCurrentScreen("counterparties")}
+              counterparty={selectedCounterparty}
+          />
+      );
   }
 
   if (currentScreen === "settings") {
@@ -131,6 +161,13 @@ export default function AdminHomeScreen() {
             onPress={() => setCurrentScreen("priceEditorMenu")}
         >
             <Text style={styles.menuItemText}>💲 {t('menu.priceEditor')}</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => setCurrentScreen("counterparties")}
+        >
+            <Text style={styles.menuItemText}>👥 {t('menu.counterparties')}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity

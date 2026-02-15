@@ -2,6 +2,7 @@ export type OrderStatus = "new" | "in_progress" | "done" | "draft";
 
 export interface Order {
   id: string;
+  clientId?: string;
   clientEmail: string;
   total: number;
   status: OrderStatus;

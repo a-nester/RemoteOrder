@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { Order } from "../types/order";
 import { mockOrders } from "../mocks/orders.mock";
+import { OrdersService } from "../services/orders.service";
 
 interface OrdersState {
   orders: Order[];
@@ -34,11 +35,15 @@ export const useOrdersStore = create<OrdersState>((set) => ({
 
   addOrder: async (order) => {
     set({ loading: true });
-    await new Promise((r) => setTimeout(r, 200));
-
-    set((state) => ({
-      orders: [order, ...state.orders],
-      loading: false,
-    }));
+    try {
+      const newOrder = await OrdersService.createOrder(order);
+      set((state) => ({
+        orders: [newOrder, ...state.orders],
+        loading: false,
+      }));
+    } catch (e) {
+      console.error(e);
+      set({ loading: false });
+    }
   },
 }));

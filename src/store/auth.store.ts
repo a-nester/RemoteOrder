@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { API_URL } from "../constants/api";
 
 export type Role = "admin" | "manager" | "client";
 
@@ -8,78 +9,50 @@ export type User = {
   id: number;
   email: string;
   role: Role;
-  warehouseId?: string; // Optional for admin, required for manager/client in logic
+  warehouseId?: string;
 };
 
 type AuthState = {
   user: User | null;
+  token: string | null;
   isHydrated: boolean;
 
-  login: (email: string, password: string) => boolean;
+  login: (email: string, password: string) => Promise<boolean>;
   logout: () => void;
   setHydrated: () => void;
 };
-
-// мок-дані (тимчасово)
-const USERS = [
-  { id: 1, email: "admin@test.com", password: "123456", role: "admin" },
-  {
-    id: 2,
-    email: "manager@test.com",
-    password: "123456",
-    role: "manager",
-    warehouseId: "1", // Main Warehouse
-  },
-  {
-    id: 3,
-    email: "client@test.com",
-    password: "123456",
-    role: "client",
-    warehouseId: "1", // Main Warehouse
-  },
-  {
-    id: 4,
-    email: "manager2@test.com",
-    password: "123456",
-    role: "manager",
-    warehouseId: "2", // Kyiv Branch
-  },
-  {
-    id: 5,
-    email: "client2@test.com",
-    password: "123456",
-    role: "client",
-    warehouseId: "2", // Kyiv Branch
-  },
-];
 
 export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
       user: null,
+      token: null,
       isHydrated: false,
 
-      login: (email, password) => {
-        const found = USERS.find(
-          (u) => u.email === email && u.password === password
-        );
+      login: async (email, password) => {
+        try {
+          const response = await fetch(`${API_URL}/auth/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password })
+          });
 
-        if (!found) return false;
+          if (!response.ok) return false;
 
-        set({
-          user: {
-            id: found.id,
-            email: found.email,
-            role: found.role as Role,
-            warehouseId: found.warehouseId,
-          },
-        });
-
-        return true;
+          const data = await response.json();
+          set({
+            user: data.user,
+            token: data.token
+          });
+          return true;
+        } catch (error) {
+          console.error("Login failed", error);
+          return false;
+        }
       },
 
       logout: () => {
-        set({ user: null });
+        set({ user: null, token: null });
       },
 
       setHydrated: () => {
@@ -90,9 +63,9 @@ export const useAuthStore = create<AuthState>()(
       name: "auth-storage",
       storage: createJSONStorage(() => AsyncStorage),
 
-      // ⬇️ КЛЮЧОВЕ: зберігаємо ТІЛЬКИ user
       partialize: (state) => ({
         user: state.user,
+        token: state.token,
       }),
 
       onRehydrateStorage: () => (state) => {
