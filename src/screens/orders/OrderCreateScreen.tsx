@@ -11,6 +11,7 @@ import { Counterparty } from "../../types/counterparty";
 import * as CounterpartiesDb from "../../db/counterpartiesDb";
 // ...
 import { Product } from "../../types/product";
+import { PriceType } from "../../types/priceType";
 import * as ProductsDb from "../../db/productsDb"; // Assuming we have DB access
 
 // Mock or import proper service/store for counterparties
@@ -57,6 +58,7 @@ export default function OrderCreateScreen({ onBack, onSaveSuccess }: OrderCreate
     const [quantityModalVisible, setQuantityModalVisible] = useState(false);
     const [quantity, setQuantity] = useState("1");
     const [price, setPrice] = useState("0");
+    const [priceTypes, setPriceTypes] = useState<PriceType[]>([]);
 
     // Initialize Draft on Mount if not exists
     useEffect(() => {
