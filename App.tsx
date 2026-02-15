@@ -1,6 +1,6 @@
 import React, { useEffect } from "react";
 import AppRouter from "./src/app/AppRouter";
-import { initAllTables } from "./src/db/productsDb";
+import { initDB } from "./src/db/database";
 import { useProductsStore } from "./src/store/products.store";
 
 import "./src/i18n";
@@ -13,8 +13,8 @@ export default function App() {
   const loadProducts = useProductsStore((state) => state.loadProducts);
 
   useEffect(() => {
-    // 1. Initialize Tables
-    initAllTables();
+    // 1. Initialize DB (All Tables)
+    initDB();
 
     // 2. Load cached data
     loadProducts();

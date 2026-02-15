@@ -8,17 +8,16 @@ import { Order, OrderItem } from "../../models/Order";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Counterparty } from "../../types/counterparty";
+import * as CounterpartiesDb from "../../db/counterpartiesDb";
+// ...
 import { Product } from "../../types/product";
 import * as ProductsDb from "../../db/productsDb"; // Assuming we have DB access
 
 // Mock or import proper service/store for counterparties
 // For now, let's use a local fetch or mock
 const getCounterparties = async () => {
-    // In real app, fetch from DB or Store
-    return [
-        { id: '1', name: 'Client A', priceTypeId: 'retail' },
-        { id: '2', name: 'Client B', priceTypeId: 'wholesale' }
-    ]; 
+    // Fetch from Local DB
+    return CounterpartiesDb.getAllCounterparties();
 };
 
 interface OrderCreateScreenProps {
@@ -87,6 +86,12 @@ export default function OrderCreateScreen({ onBack, onSaveSuccess }: OrderCreate
         setFilteredProducts(prods);
     }, []);
 
+    // Load Price Types
+    useEffect(() => {
+        const types = ProductsDb.getAllPriceTypes();
+        setPriceTypes(types);
+    }, []);
+
     const handleSelectClient = (client: any) => {
         initDraft({ id: client.id, name: client.name });
         setClientModalVisible(false);
@@ -94,10 +99,34 @@ export default function OrderCreateScreen({ onBack, onSaveSuccess }: OrderCreate
 
     const handleSelectProduct = (product: Product) => {
         setSelectedProduct(product);
-        // Determine price based on client price type?
-        // Simple default price for now
-        const defaultPrice = product.prices ? (product.prices as any).standard : 0;
-        setPrice(defaultPrice.toString());
+        
+        let initialPrice = 0;
+        
+        if (draft && draft.counterpartyId) {
+            const currentClient = clients.find(c => c.id === draft.counterpartyId);
+            
+            if (currentClient && currentClient.priceTypeId && product.prices) {
+                // Find slug for the client's price type ID
+                const priceType = priceTypes.find(pt => pt.id === currentClient.priceTypeId);
+                
+                if (priceType && priceType.slug) {
+                    const priceKey = priceType.slug;
+                    const specificPrice = product.prices[priceKey];
+                    
+                    if (specificPrice !== undefined) {
+                        initialPrice = typeof specificPrice === 'string' ? parseFloat(specificPrice) : specificPrice;
+                    } else if ((product.prices as any).standard !== undefined) {
+                        initialPrice = typeof (product.prices as any).standard === 'string' ? parseFloat((product.prices as any).standard) : (product.prices as any).standard;
+                    }
+                } else if ((product.prices as any).standard !== undefined) {
+                    initialPrice = (product.prices as any).standard;
+                }
+            } else if (product.prices && (product.prices as any).standard !== undefined) {
+                 initialPrice = (product.prices as any).standard;
+            }
+        }
+        
+        setPrice(initialPrice.toString());
         setQuantity("1");
         setProductModalVisible(false);
         setQuantityModalVisible(true);
@@ -182,7 +211,9 @@ export default function OrderCreateScreen({ onBack, onSaveSuccess }: OrderCreate
                 <TouchableOpacity onPress={onBack} style={styles.backButton}>
                     <Ionicons name="arrow-back" size={24} color={colors.text} />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>{t('order.create', 'New Order')}</Text>
+                <Text style={styles.headerTitle}>
+                    {draft.isDraft === 0 ? t('order.edit', 'Edit Order') : t('order.create', 'New Order')}
+                </Text>
                 <TouchableOpacity onPress={handleSubmit} style={styles.saveButton}>
                      <Text style={styles.saveButtonText}>{t('common.save')}</Text>
                 </TouchableOpacity>

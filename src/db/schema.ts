@@ -62,3 +62,20 @@ CREATE TABLE IF NOT EXISTS price_types (
   isDeleted INTEGER DEFAULT 0
 );
 `;
+
+export const CREATE_COUNTERPARTIES_TABLE = `
+CREATE TABLE IF NOT EXISTS counterparties (
+  id TEXT PRIMARY KEY NOT NULL,
+  name TEXT NOT NULL,
+  address TEXT,
+  phone TEXT,
+  contactPerson TEXT,
+  isBuyer INTEGER DEFAULT 0,
+  isSeller INTEGER DEFAULT 0,
+  priceTypeId TEXT,
+  groupId TEXT,
+  createdAt INTEGER,
+  updatedAt INTEGER,
+  isDeleted INTEGER DEFAULT 0
+);
+`;

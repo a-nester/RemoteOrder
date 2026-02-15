@@ -1,7 +1,7 @@
-
 import { API_URL } from '../constants/api';
 import { useAuthStore } from '../store/auth.store';
 import { Counterparty, CounterpartyGroup } from '../types/counterparty';
+import * as CounterpartiesDb from '../db/counterpartiesDb';
 
 const getHeaders = async () => {
     const token = useAuthStore.getState().token;
@@ -70,6 +70,9 @@ export const CounterpartyService = {
         }
     },
 
+
+    // ... (existing code)
+
     update: async (id: string, data: Partial<Counterparty>): Promise<Counterparty> => {
         try {
             const response = await fetch(`${API_URL}/counterparties/${id}`, {
@@ -78,10 +81,32 @@ export const CounterpartyService = {
                 body: JSON.stringify(data)
             });
             if (!response.ok) throw new Error('Failed to update counterparty');
-            return await response.json();
+            const updated = await response.json();
+            CounterpartiesDb.upsertCounterparty(updated);
+            return updated;
         } catch (error) {
             console.error(error);
             throw error;
+        }
+    },
+
+    syncCounterparties: async () => {
+        try {
+            console.log("Syncing counterparties...");
+            // For now fetch all, later can implement 'since' logic
+            const response = await fetch(`${API_URL}/counterparties`, {
+                headers: await getHeaders()
+            });
+            if (!response.ok) throw new Error('Failed to fetch counterparties for sync');
+            const data: Counterparty[] = await response.json();
+
+            if (data.length > 0) {
+                CounterpartiesDb.bulkUpsertCounterparties(data);
+                console.log(`Synced ${data.length} counterparties`);
+            }
+        } catch (error) {
+            console.error("Counterparty sync failed:", error);
+            // Don't throw, just log, so app can continue offline
         }
     }
 };

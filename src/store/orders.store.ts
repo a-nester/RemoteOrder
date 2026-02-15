@@ -24,6 +24,7 @@ interface OrdersState {
   saveDraft: () => Promise<void>;
   submitOrder: () => Promise<void>;
   discardDraft: () => void;
+  loadOrderForEditing: (order: Order) => void;
 }
 
 export const useOrdersStore = create<OrdersState>((set, get) => ({
@@ -173,5 +174,15 @@ export const useOrdersStore = create<OrdersState>((set, get) => ({
       OrdersDb.deleteOrder(draft.id);
       set({ draft: null });
     }
+  },
+
+  loadOrderForEditing: (order: Order) => {
+    // 1. Get Items
+    const items = OrdersDb.getOrderItems(order.id);
+
+    // 2. Set as Draft (keep existing isDraft status or set to 1 if we want to treat as draft?)
+    // For now, let's keep it as is, so it doesn't disappear from the list if it was 0.
+    // But we need to ensure UI knows we are editing.
+    set({ draft: { ...order, items } });
   }
 }));

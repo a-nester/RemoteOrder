@@ -4,6 +4,7 @@ import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, Activity
 import { useTranslation } from "react-i18next";
 import { useTheme } from "../../context/ThemeContext";
 import { OrdersService, OrderFilter } from "../../services/orders.service";
+import { useOrdersStore } from "../../store/orders.store";
 import { Order, OrderStatus } from "../../models/Order";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -72,7 +73,9 @@ export default function OrdersScreen({ onBack }: OrdersScreenProps) {
     };
 
     const handleEditOrder = (order: Order) => {
-        Alert.alert(t('common.edit'), `Edit order ${order.id} functionality to be implemented`);
+        // Load order into store "draft"
+        useOrdersStore.getState().loadOrderForEditing(order);
+        setIsCreating(true);
     };
 
     const getStatusColor = (status: OrderStatus) => {

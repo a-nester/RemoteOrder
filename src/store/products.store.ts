@@ -3,6 +3,7 @@ import { Product } from "../types/product";
 import { getAllProducts } from "../db/productsDb";
 import { ProductsService } from "../services/products.service";
 import { PriceTypesService } from "../services/priceTypes.service";
+import { CounterpartyService } from "../services/counterparty.service";
 
 interface ProductsState {
     products: Product[];
@@ -29,7 +30,8 @@ export const useProductsStore = create<ProductsState>((set, get) => ({
             // 1. Fetch from API and update local DB (both products and price types)
             await Promise.all([
                 ProductsService.syncProducts(),
-                PriceTypesService.syncPriceTypes()
+                PriceTypesService.syncPriceTypes(),
+                CounterpartyService.syncCounterparties()
             ]);
 
             // 2. Reload from local DB to update UI
