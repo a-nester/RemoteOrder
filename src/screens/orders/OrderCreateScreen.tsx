@@ -95,7 +95,17 @@ export default function OrderCreateScreen({ onBack, onSaveSuccess }: OrderCreate
     }, []);
 
     const handleSelectClient = (client: any) => {
-        initDraft({ id: client.id, name: client.name });
+        if (draft) {
+             // Creating new draft happens in initDraft, but here we update existing
+             // Use new store action if available or just update draft state manually if simple
+             // However, best practice is to use store action
+             // Since I added updateDraftCounterparty to store interface in previous step:
+             // Note: I must ensure it is available in destructured props
+             // Let's assume it is or I need to update the destructuring above
+             useOrdersStore.getState().updateDraftCounterparty({ id: client.id, name: client.name });
+        } else {
+             initDraft({ id: client.id, name: client.name });
+        }
         setClientModalVisible(false);
     };
 
@@ -223,10 +233,12 @@ export default function OrderCreateScreen({ onBack, onSaveSuccess }: OrderCreate
 
             <ScrollView style={styles.content}>
                 {/* Client Info */}
-                <View style={styles.section}>
-                    <Text style={styles.label}>{t('counterparties.group')}: {draft.counterpartyName}</Text>
-                    {/* Price Type would ideally be shown here */}
-                </View>
+                <TouchableOpacity style={styles.section} onPress={() => setClientModalVisible(true)}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <Text style={styles.label}>{t('counterparties.group')}: {draft.counterpartyName}</Text>
+                        <Ionicons name="pencil" size={16} color={colors.primary} />
+                    </View>
+                </TouchableOpacity>
 
                 {/* Items Table */}
                 <View style={styles.table}>

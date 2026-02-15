@@ -4,11 +4,11 @@ import { Order, OrderStatus } from "../models/Order";
 
 // Mock Data
 let MOCK_ORDERS: Order[] = [
-  { id: '1', date: '2023-10-25T10:00:00Z', counterpartyId: '101', counterpartyName: 'Tech Solutions Inc.', amount: 1250.00, currency: 'USD', status: "NEW", createdAt: Date.now() },
-  { id: '2', date: '2023-10-26T14:30:00Z', counterpartyId: '102', counterpartyName: 'Green Valley Grocers', amount: 450.50, currency: 'USD', status: "ACCEPTED", createdAt: Date.now() },
-  { id: '3', date: '2023-10-27T09:15:00Z', counterpartyId: '103', counterpartyName: 'City Cafe', amount: 89.99, currency: 'USD', status: "COMPLETED", createdAt: Date.now() },
-  { id: '4', date: '2023-11-01T11:00:00Z', counterpartyId: '101', counterpartyName: 'Tech Solutions Inc.', amount: 2500.00, currency: 'USD', status: "NEW", createdAt: Date.now() },
-  { id: '5', date: '2023-11-02T16:45:00Z', counterpartyId: '104', counterpartyName: 'Mega Corp', amount: 5000.00, currency: 'USD', status: "NEW", createdAt: Date.now() },
+  { id: '1', date: '2023-10-25T10:00:00Z', counterpartyId: '101', counterpartyName: 'Tech Solutions Inc.', amount: 1250.00, currency: 'USD', status: "NEW", createdAt: Date.now(), isDraft: 0, items: [] },
+  { id: '2', date: '2023-10-26T14:30:00Z', counterpartyId: '102', counterpartyName: 'Green Valley Grocers', amount: 450.50, currency: 'USD', status: "ACCEPTED", createdAt: Date.now(), isDraft: 0, items: [] },
+  { id: '3', date: '2023-10-27T09:15:00Z', counterpartyId: '103', counterpartyName: 'City Cafe', amount: 89.99, currency: 'USD', status: "COMPLETED", createdAt: Date.now(), isDraft: 0, items: [] },
+  { id: '4', date: '2023-11-01T11:00:00Z', counterpartyId: '101', counterpartyName: 'Tech Solutions Inc.', amount: 2500.00, currency: 'USD', status: "NEW", createdAt: Date.now(), isDraft: 0, items: [] },
+  { id: '5', date: '2023-11-02T16:45:00Z', counterpartyId: '104', counterpartyName: 'Mega Corp', amount: 5000.00, currency: 'USD', status: "NEW", createdAt: Date.now(), isDraft: 0, items: [] },
 ];
 
 export interface OrderFilter {
@@ -66,15 +66,17 @@ export const OrdersService = {
 
     // Check if order exists (Upsert logic for Mock)
     const existingIndex = MOCK_ORDERS.findIndex(o => o.id === orderData.id);
+    let finalOrder: Order;
+    let operation: 'INSERT' | 'UPDATE';
 
     if (existingIndex >= 0) {
       // Update existing
-      const updatedOrder = { ...MOCK_ORDERS[existingIndex], ...orderData, updatedAt: Date.now() };
-      MOCK_ORDERS[existingIndex] = updatedOrder;
-      return updatedOrder;
+      finalOrder = { ...MOCK_ORDERS[existingIndex], ...orderData, updatedAt: Date.now() };
+      MOCK_ORDERS[existingIndex] = finalOrder;
+      operation = 'UPDATE';
     } else {
       // Create new
-      const newOrder: Order = {
+      finalOrder = {
         id: orderData.id || Math.random().toString(36).substr(2, 9),
         date: new Date().toISOString(),
         status: "NEW",
@@ -85,8 +87,37 @@ export const OrdersService = {
         createdAt: Date.now(),
         ...orderData
       };
-      MOCK_ORDERS.push(newOrder);
-      return newOrder;
+      MOCK_ORDERS.push(finalOrder);
+      operation = 'INSERT';
     }
+
+    // SYNC TO SERVER (Background)
+    const syncPayload = {
+      userId: '1',
+      changes: [
+        {
+          id: finalOrder.id,
+          operation: operation,
+          data: {
+            status: finalOrder.status,
+            total: finalOrder.amount,
+            items: finalOrder.items?.map((i: any) => ({
+              id: i.productId,
+              count: i.quantity,
+              price: i.price
+            })) || []
+          }
+        }
+      ]
+    };
+
+    // Use API_URL from imports
+    fetch(`${API_URL}/sync/push`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(syncPayload)
+    }).catch(err => console.log("Background sync failed (Offline?):", err));
+
+    return finalOrder;
   },
 };
