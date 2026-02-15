@@ -44,13 +44,39 @@ export default function OrdersScreen({ onBack }: OrdersScreenProps) {
     const loadOrders = useCallback(async () => {
         setLoading(true);
         try {
-            const filter: OrderFilter = {
-                startDate,
-                endDate,
-                search: searchTerm
-            };
-            const data = await OrdersService.getOrders(filter);
-            setOrders(data);
+            // Fetch from Local DB instead of Mock Service
+            // We import OrdersDb directly or via Store. 
+            // For now, let's use OrdersDb directly as it's cleaner than store for filtering
+            // Note: In real app, might want to move this to Service or Store
+            const allOrders = await Promise.resolve(require("../../db/ordersDb").getAllOrders());
+            
+            console.log(`[DB Verify] Loaded ${allOrders.length} orders from Local DB.`);
+            if (allOrders.length > 0) {
+                 console.log(`[DB Verify] Latest Order: ${JSON.stringify(allOrders[0])}`);
+            }
+
+            // Client-side filtering
+            let filtered = allOrders;
+
+            if (startDate) {
+                filtered = filtered.filter(o => new Date(o.date) >= new Date(startDate));
+            }
+
+            if (endDate) {
+                const end = new Date(endDate);
+                end.setHours(23, 59, 59, 999);
+                filtered = filtered.filter(o => new Date(o.date) <= end);
+            }
+
+            if (searchTerm) {
+                const searchLower = searchTerm.toLowerCase();
+                filtered = filtered.filter(o =>
+                    o.counterpartyName.toLowerCase().includes(searchLower) ||
+                    o.id.toLowerCase().includes(searchLower)
+                );
+            }
+            
+            setOrders(filtered);
         } catch (error) {
             console.error("Failed to load orders", error);
             Alert.alert(t('common.error'), t('common.failedToLoad'));
@@ -96,22 +122,43 @@ export default function OrdersScreen({ onBack }: OrdersScreenProps) {
         </View>
     );
 
+    const handleDeleteOrder = (order: Order) => {
+        Alert.alert(
+            t('common.delete', 'Delete'),
+            t('order.deleteConfirmation', 'Are you sure you want to delete this order?'),
+            [
+                { text: t('common.cancel'), style: 'cancel' },
+                { 
+                    text: t('common.delete'), 
+                    style: 'destructive', 
+                    onPress: () => {
+                        require("../../db/ordersDb").deleteOrder(order.id);
+                        loadOrders();
+                    }
+                }
+            ]
+        );
+    };
+
     const renderItem = ({ item }: { item: Order }) => (
         <View style={styles.card}>
-            <View style={styles.cardRow}>
-                <Text style={styles.dateText}>{new Date(item.date).toLocaleDateString()}</Text>
-                <StatusBadge status={item.status} />
-            </View>
-            
-            <View style={styles.cardRow}>
-                <Text style={styles.counterpartyText}>{item.counterpartyName}</Text>
-            </View>
-
-            <View style={styles.cardRow}>
-                 <Text style={styles.amountText}>{item.amount.toFixed(2)} {item.currency}</Text>
-                 <TouchableOpacity onPress={() => handleEditOrder(item)} style={styles.editButton}>
-                    <Ionicons name="pencil" size={20} color={colors.primary} />
-                 </TouchableOpacity>
+            <View style={styles.cardRowHeader}>
+                 <View style={styles.rowLeft}>
+                    <Text style={styles.dateText}>{new Date(item.date).toLocaleDateString()}</Text>
+                    <Text style={styles.counterpartyText} numberOfLines={1}>{item.counterpartyName}</Text>
+                 </View>
+                 <View style={styles.rowRight}>
+                    <Text style={styles.amountText}>{item.amount.toFixed(2)}</Text>
+                    <StatusBadge status={item.status} />
+                    
+                    <TouchableOpacity onPress={() => handleEditOrder(item)} style={styles.actionButton}>
+                        <Ionicons name="pencil" size={18} color={colors.primary} />
+                    </TouchableOpacity>
+                    
+                    <TouchableOpacity onPress={() => handleDeleteOrder(item)} style={styles.actionButton}>
+                        <Ionicons name="trash-outline" size={18} color={colors.danger} />
+                    </TouchableOpacity>
+                 </View>
             </View>
         </View>
     );
@@ -266,37 +313,50 @@ const getStyles = (colors: any) => StyleSheet.create({
         borderWidth: 1,
         borderColor: colors.border
     },
-    cardRow: {
+    cardRowHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 8
+    },
+    rowLeft: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+        marginRight: 10
+    },
+    rowRight: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8
     },
     dateText: {
         color: colors.text,
-        opacity: 0.7,
-        fontSize: 14
+        opacity: 0.6,
+        fontSize: 12,
+        minWidth: 70
     },
     counterpartyText: {
         color: colors.text,
-        fontSize: 16,
-        fontWeight: '600'
+        fontSize: 14,
+        fontWeight: '600',
+        flex: 1
     },
     amountText: {
         color: colors.text,
-        fontSize: 16,
+        fontSize: 14,
         fontWeight: 'bold'
     },
     badge: {
-        paddingHorizontal: 8,
-        paddingVertical: 4,
-        borderRadius: 12
+        paddingHorizontal: 6,
+        paddingVertical: 2,
+        borderRadius: 8
     },
     badgeText: {
-        fontSize: 12,
+        fontSize: 10,
         fontWeight: 'bold'
     },
-    editButton: {
+    actionButton: {
          padding: 5
     },
     emptyText: {

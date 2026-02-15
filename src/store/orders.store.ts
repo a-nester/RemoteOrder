@@ -20,6 +20,7 @@ interface OrdersState {
   updateDraftItem: (itemId: string, updates: Partial<OrderItem>) => void;
   removeDraftItem: (itemId: string) => void;
   updateDraftComment: (comment: string) => void;
+  updateDraftCounterparty: (counterparty: { id: string, name: string }) => void;
 
   saveDraft: () => Promise<void>;
   submitOrder: () => Promise<void>;
@@ -130,6 +131,18 @@ export const useOrdersStore = create<OrdersState>((set, get) => ({
     const { draft } = get();
     if (!draft) return;
     const updatedDraft = { ...draft, comment };
+    set({ draft: updatedDraft });
+    OrdersDb.saveOrder(updatedDraft);
+  },
+
+  updateDraftCounterparty: (counterparty) => {
+    const { draft } = get();
+    if (!draft) return;
+    const updatedDraft = {
+      ...draft,
+      counterpartyId: counterparty.id,
+      counterpartyName: counterparty.name
+    };
     set({ draft: updatedDraft });
     OrdersDb.saveOrder(updatedDraft);
   },
