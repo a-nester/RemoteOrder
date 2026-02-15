@@ -8,6 +8,7 @@ import { PriceTypesService } from '../../../services/priceTypes.service';
 import { Counterparty, CounterpartyGroup } from '../../../types/counterparty';
 import { PriceType } from '../../../types/priceType';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Picker } from '@react-native-picker/picker'; // You might need to install this or use a custom dropdown
 
 export const CounterpartyEditScreen = ({ onBack, counterparty }: { onBack: () => void, counterparty?: Counterparty }) => {
@@ -29,6 +30,7 @@ export const CounterpartyEditScreen = ({ onBack, counterparty }: { onBack: () =>
     const [priceTypes, setPriceTypes] = useState<PriceType[]>([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const insets = useSafeAreaInsets();
 
     useEffect(() => {
         if (counterparty) {
@@ -61,10 +63,16 @@ export const CounterpartyEditScreen = ({ onBack, counterparty }: { onBack: () =>
 
         setSaving(true);
         try {
+            const payload = {
+                ...formData,
+                priceTypeId: formData.priceTypeId || null,
+                groupId: formData.groupId || null
+            };
+
             if (counterparty) {
-                await CounterpartyService.update(counterparty.id, formData);
+                await CounterpartyService.update(counterparty.id, payload);
             } else {
-                await CounterpartyService.create(formData);
+                await CounterpartyService.create(payload);
             }
             onBack();
         } catch (error) {
@@ -80,7 +88,7 @@ export const CounterpartyEditScreen = ({ onBack, counterparty }: { onBack: () =>
 
     return (
         <View style={[styles.container, { backgroundColor: colors.background }]}>
-            <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
+            <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: colors.border, paddingTop: insets.top }]}>
                 <TouchableOpacity onPress={onBack} style={styles.backButton}>
                     <Ionicons name="arrow-back" size={24} color={colors.text} />
                 </TouchableOpacity>

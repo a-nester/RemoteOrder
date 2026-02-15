@@ -6,6 +6,7 @@ import { useTheme } from '../../../context/ThemeContext';
 import { CounterpartyService } from '../../../services/counterparty.service';
 import { Counterparty, CounterpartyGroup } from '../../../types/counterparty';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export const CounterpartiesListScreen = ({ onBack, onEdit, onCreate }: { onBack: () => void, onEdit: (cp: Counterparty) => void, onCreate: () => void }) => {
     const { t } = useTranslation();
@@ -15,6 +16,7 @@ export const CounterpartiesListScreen = ({ onBack, onEdit, onCreate }: { onBack:
     const [loading, setLoading] = useState(true);
     const [isGroupModalVisible, setGroupModalVisible] = useState(false);
     const [newGroupName, setNewGroupName] = useState('');
+    const insets = useSafeAreaInsets();
 
     useEffect(() => {
         loadData();
@@ -48,6 +50,8 @@ export const CounterpartiesListScreen = ({ onBack, onEdit, onCreate }: { onBack:
         }
     };
 
+
+
     const renderItem = ({ item }: { item: Counterparty }) => (
         <View style={[styles.itemContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <View style={styles.itemHeader}>
@@ -70,7 +74,7 @@ export const CounterpartiesListScreen = ({ onBack, onEdit, onCreate }: { onBack:
 
     return (
         <View style={[styles.container, { backgroundColor: colors.background }]}>
-            <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
+            <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: colors.border, paddingTop: insets.top + 10 }]}>
                 <TouchableOpacity onPress={onBack} style={styles.backButton}>
                     <Ionicons name="arrow-back" size={24} color={colors.text} />
                 </TouchableOpacity>

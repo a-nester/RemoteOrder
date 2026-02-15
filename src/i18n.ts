@@ -17,7 +17,9 @@ const en = {
         copy: "Copy",
         confirm: "Confirm",
         search: "Search...",
-        actions: "Actions"
+        actions: "Actions",
+        failedToLoad: "Failed to load data",
+        failedToSave: "Failed to save data"
     },
     menu: {
         dashboard: "Dashboard",
@@ -89,7 +91,9 @@ const uk = {
         "copy": "Копіювати",
         "confirm": "Підтвердити",
         "search": "Пошук...",
-        "actions": "Дії"
+        "actions": "Дії",
+        "failedToLoad": "Не вдалося завантажити дані",
+        "failedToSave": "Не вдалося зберегти дані"
     },
     "menu": {
         "dashboard": "Дашборд",

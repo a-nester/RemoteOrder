@@ -6,6 +6,7 @@ import {
   TextInput,
   FlatList,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useState } from "react";
 import { useWarehouseStore } from "../../store/warehouse.store";
 
@@ -28,7 +29,7 @@ export default function WarehouseListScreen({ onBack }: Props) {
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <Text style={styles.title}>Управління складами</Text>
 
       <View style={styles.inputContainer}>
@@ -60,7 +61,7 @@ export default function WarehouseListScreen({ onBack }: Props) {
       <TouchableOpacity onPress={onBack} style={styles.backButton}>
         <Text style={styles.backButtonText}>Назад</Text>
       </TouchableOpacity>
-    </View>
+    </SafeAreaView>
   );
 }
 

@@ -6,6 +6,8 @@ import { useProductsStore } from "./src/store/products.store";
 import "./src/i18n";
 import { ThemeProvider } from "./src/context/ThemeContext";
 
+import { SafeAreaProvider } from "react-native-safe-area-context";
+
 export default function App() {
   const syncProducts = useProductsStore((state) => state.sync);
   const loadProducts = useProductsStore((state) => state.loadProducts);
@@ -23,7 +25,9 @@ export default function App() {
 
   return (
     <ThemeProvider>
-        <AppRouter />
+        <SafeAreaProvider>
+            <AppRouter />
+        </SafeAreaProvider>
     </ThemeProvider>
   );
 }
