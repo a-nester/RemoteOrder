@@ -16,8 +16,9 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { CounterpartiesListScreen } from "./counterparties/CounterpartiesListScreen";
 import { CounterpartyEditScreen } from "./counterparties/CounterpartyEditScreen";
 import { Counterparty } from "../../types/counterparty";
+import OrdersScreen from "../common/OrdersScreen";
 
-type Screen = "menu" | "warehouses" | "products" | "priceEditorMenu" | "priceTypes" | "priceDocuments" | "priceDocumentEditor" | "settings" | "counterparties" | "counterpartyEdit";
+type Screen = "menu" | "warehouses" | "products" | "priceEditorMenu" | "priceTypes" | "priceDocuments" | "priceDocumentEditor" | "settings" | "counterparties" | "counterpartyEdit" | "orders";
 
 export default function AdminHomeScreen() {
   const user = useAuthStore((s) => s.user);
@@ -64,6 +65,10 @@ export default function AdminHomeScreen() {
               counterparty={selectedCounterparty}
           />
       );
+  }
+
+  if (currentScreen === "orders") {
+      return <OrdersScreen onBack={() => setCurrentScreen("menu")} />;
   }
 
   if (currentScreen === "settings") {
@@ -173,6 +178,13 @@ export default function AdminHomeScreen() {
             onPress={() => setCurrentScreen("counterparties")}
         >
             <Text style={styles.menuItemText}>👥 {t('menu.counterparties')}</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => setCurrentScreen("orders")}
+        >
+            <Text style={styles.menuItemText}>🛒 {t('menu.orders')}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity

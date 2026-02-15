@@ -149,6 +149,14 @@ const uk = {
         "priceType": "Тип Ціни",
         "selectPriceType": "Оберіть Тип Ціни",
         "noGroup": "Без Групи"
+    },
+    "order": {
+        "create": "Нове Замовлення"
+    },
+    "status": {
+        "NEW": "Нове",
+        "ACCEPTED": "Прийнято",
+        "COMPLETED": "Проведено"
     }
 };
 
