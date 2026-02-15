@@ -3,6 +3,9 @@ import AppRouter from "./src/app/AppRouter";
 import { initAllTables } from "./src/db/productsDb";
 import { useProductsStore } from "./src/store/products.store";
 
+import "./src/i18n";
+import { ThemeProvider } from "./src/context/ThemeContext";
+
 export default function App() {
   const syncProducts = useProductsStore((state) => state.sync);
   const loadProducts = useProductsStore((state) => state.loadProducts);
@@ -18,5 +21,9 @@ export default function App() {
     syncProducts();
   }, []);
 
-  return <AppRouter />;
+  return (
+    <ThemeProvider>
+        <AppRouter />
+    </ThemeProvider>
+  );
 }

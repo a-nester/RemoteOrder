@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from "react-native"; 
 import { useState } from "react";
 import { useAuthStore } from "../../store/auth.store";
 import WarehouseListScreen from "./WarehouseListScreen";
@@ -7,43 +7,81 @@ import PriceDocumentsListScreen from "./price-documents/PriceDocumentsListScreen
 import PriceDocumentEditorScreen from "./price-documents/PriceDocumentEditorScreen";
 import PriceEditorScreen from "./PriceEditorScreen";
 import PriceTypesScreen from "./PriceTypesScreen";
+import { SettingsScreen } from "../common/SettingsScreen";
+import { useTranslation } from "react-i18next";
+import { useTheme } from "../../context/ThemeContext";
+import { Ionicons } from "@expo/vector-icons";
 
-type Screen = "menu" | "warehouses" | "products" | "priceEditor" | "priceTypes" | "priceDocuments" | "priceDocumentEditor";
+type Screen = "menu" | "warehouses" | "products" | "priceEditorMenu" | "priceTypes" | "priceDocuments" | "priceDocumentEditor" | "settings";
 
 export default function AdminHomeScreen() {
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
   const [currentScreen, setCurrentScreen] = useState<Screen>("menu");
   const [selectedDocumentId, setSelectedDocumentId] = useState<string | undefined>(undefined);
+  
+  const { t } = useTranslation();
+  const { colors } = useTheme();
+
+  const styles = getStyles(colors);
 
   if (currentScreen === "warehouses") {
     return <WarehouseListScreen onBack={() => setCurrentScreen("menu")} />;
   }
 
   if (currentScreen === "products") {
-    // role="admin" allows editing prices if implemented in ProductsScreen (it navigates to ProductEditScreen)
-    // The user wanted "Setting prices".
     return <ProductsScreen onBack={() => setCurrentScreen("menu")} role="admin" />;
   }
 
-  if (currentScreen === "priceEditor") {
+  if (currentScreen === "settings") {
       return (
-        <PriceEditorScreen 
-            onBack={() => setCurrentScreen("menu")} 
-            onNavigateToPriceTypes={() => setCurrentScreen("priceTypes")}
-            onNavigateToProducts={() => setCurrentScreen("products")}
-        />
+          <View style={{ flex: 1 }}>
+              <View style={styles.header}>
+                  <TouchableOpacity onPress={() => setCurrentScreen("menu")} style={styles.backButton}>
+                      <Ionicons name="arrow-back" size={24} color={colors.text} />
+                  </TouchableOpacity>
+                  <Text style={styles.headerTitle}>{t('settings.title')}</Text>
+              </View>
+              <SettingsScreen />
+          </View>
       );
   }
 
+  if (currentScreen === "priceEditorMenu") {
+      return (
+        <View style={styles.container}>
+             <View style={styles.header}>
+                  <TouchableOpacity onPress={() => setCurrentScreen("menu")} style={styles.backButton}>
+                      <Ionicons name="arrow-back" size={24} color={colors.text} />
+                  </TouchableOpacity>
+                  <Text style={styles.headerTitle}>{t('menu.priceEditor')}</Text>
+              </View>
+            
+            <TouchableOpacity
+                style={styles.menuItem}
+                onPress={() => setCurrentScreen("priceDocuments")}
+            >
+                <Text style={styles.menuItemText}>📝 {t('menu.priceSettings')}</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+                style={styles.menuItem}
+                onPress={() => setCurrentScreen("priceTypes")}
+            >
+                <Text style={styles.menuItemText}>🏷️ {t('menu.priceTypes')}</Text>
+            </TouchableOpacity>
+        </View>
+      )
+  }
+
   if (currentScreen === "priceTypes") {
-      return <PriceTypesScreen onBack={() => setCurrentScreen("priceEditor")} />;
+      return <PriceTypesScreen onBack={() => setCurrentScreen("priceEditorMenu")} />;
   }
 
   if (currentScreen === "priceDocuments") {
       return (
         <PriceDocumentsListScreen 
-            onBack={() => setCurrentScreen("menu")}
+            onBack={() => setCurrentScreen("priceEditorMenu")}
             onCreateDocument={() => {
                 setSelectedDocumentId(undefined);
                 setCurrentScreen("priceDocumentEditor");
@@ -67,78 +105,103 @@ export default function AdminHomeScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Admin Panel</Text>
+      <Text style={styles.title}>RemoteOrder</Text>
 
       <Text style={styles.text}>
-        Ви увійшли як: {user?.email}
+        {user?.email} ({user?.role})
       </Text>
-
-      <TouchableOpacity
-        style={styles.menuItem}
-        onPress={() => setCurrentScreen("warehouses")}
-      >
-        <Text style={styles.menuItemText}>🏢 Управління складами</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        style={styles.menuItem}
-        onPress={() => setCurrentScreen("products")}
-      >
-        <Text style={styles.menuItemText}>📦 Список товарів</Text>
-      </TouchableOpacity>
       
-      <TouchableOpacity
-        style={styles.menuItem}
-        onPress={() => setCurrentScreen("priceDocuments")}
-      >
-        <Text style={styles.menuItemText}>📝 Журнал установки цін (Documents)</Text>
-      </TouchableOpacity>
+      <ScrollView contentContainerStyle={styles.menuContainer}>
+        <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => setCurrentScreen("warehouses")}
+        >
+            <Text style={styles.menuItemText}>🏢 {t('menu.dashboard')} (Warehouses)</Text>
+        </TouchableOpacity>
 
-      <TouchableOpacity
-        style={styles.menuItem}
-        onPress={() => setCurrentScreen("priceEditor")}
-      >
-        <Text style={styles.menuItemText}>💲 Редактор цін (Old)</Text>
-      </TouchableOpacity>
+        <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => setCurrentScreen("products")}
+        >
+            <Text style={styles.menuItemText}>📦 {t('menu.products')}</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => setCurrentScreen("priceEditorMenu")}
+        >
+            <Text style={styles.menuItemText}>💲 {t('menu.priceEditor')}</Text>
+        </TouchableOpacity>
 
-      <TouchableOpacity style={styles.logoutButton} onPress={logout}>
-        <Text style={styles.logoutText}>Log out</Text>
-      </TouchableOpacity>
+        <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => setCurrentScreen("settings")}
+        >
+            <Text style={styles.menuItemText}>⚙️ {t('menu.settings')}</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.logoutButton} onPress={logout}>
+            <Text style={styles.logoutText}>{t('menu.signOut')}</Text>
+        </TouchableOpacity>
+      </ScrollView>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
-    justifyContent: "center",
-    backgroundColor: "#fff",
+    backgroundColor: colors.background,
+  },
+  menuContainer: {
+      paddingBottom: 40,
+      justifyContent: "center",
+      flexGrow: 1
+  },
+  header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: 20,
+      paddingTop: 10
+  },
+  backButton: {
+      padding: 10,
+      marginRight: 10
+  },
+  headerTitle: {
+      fontSize: 20,
+      fontWeight: 'bold',
+      color: colors.text
   },
   title: {
     fontSize: 28,
     fontWeight: "600",
     marginBottom: 12,
     textAlign: "center",
+    marginTop: 40,
+    color: colors.text
   },
   text: {
     fontSize: 16,
     marginBottom: 30,
     textAlign: "center",
-    color: "#666",
+    color: colors.text,
+    opacity: 0.7
   },
   menuItem: {
     padding: 20,
-    backgroundColor: "#f0f0f0",
+    backgroundColor: colors.card,
     marginBottom: 15,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: "#e0e0e0",
+    borderColor: colors.border,
   },
   menuItemText: {
     fontSize: 18,
     fontWeight: "500",
     textAlign: "center",
+    color: colors.text
   },
   logoutButton: {
     marginTop: 40,
@@ -146,7 +209,7 @@ const styles = StyleSheet.create({
     padding: 10,
   },
   logoutText: {
-    color: "red",
+    color: colors.danger,
     fontSize: 16,
   },
 });
