@@ -63,18 +63,30 @@ export const OrdersService = {
 
   async createOrder(orderData: any) {
     await new Promise(resolve => setTimeout(resolve, 500));
-    const newOrder: Order = {
-      id: Math.random().toString(36).substr(2, 9),
-      date: new Date().toISOString(),
-      status: "NEW",
-      counterpartyId: orderData.counterpartyId || '',
-      counterpartyName: orderData.counterpartyName || 'Unknown',
-      amount: orderData.amount || 0,
-      currency: 'USD',
-      createdAt: Date.now(),
-      ...orderData
-    };
-    MOCK_ORDERS.push(newOrder);
-    return newOrder;
+
+    // Check if order exists (Upsert logic for Mock)
+    const existingIndex = MOCK_ORDERS.findIndex(o => o.id === orderData.id);
+
+    if (existingIndex >= 0) {
+      // Update existing
+      const updatedOrder = { ...MOCK_ORDERS[existingIndex], ...orderData, updatedAt: Date.now() };
+      MOCK_ORDERS[existingIndex] = updatedOrder;
+      return updatedOrder;
+    } else {
+      // Create new
+      const newOrder: Order = {
+        id: orderData.id || Math.random().toString(36).substr(2, 9),
+        date: new Date().toISOString(),
+        status: "NEW",
+        counterpartyId: orderData.counterpartyId || '',
+        counterpartyName: orderData.counterpartyName || 'Unknown',
+        amount: orderData.amount || 0,
+        currency: 'USD',
+        createdAt: Date.now(),
+        ...orderData
+      };
+      MOCK_ORDERS.push(newOrder);
+      return newOrder;
+    }
   },
 };

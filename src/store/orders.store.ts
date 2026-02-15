@@ -161,7 +161,17 @@ export const useOrdersStore = create<OrdersState>((set, get) => ({
         console.log("Offline mode: Order saved locally, will sync later");
       }
 
-      set({ draft: null, orders: [finalOrder, ...get().orders], loading: false });
+      set((state) => {
+        const existingIndex = state.orders.findIndex(o => o.id === finalOrder.id);
+        let newOrders;
+        if (existingIndex >= 0) {
+          newOrders = [...state.orders];
+          newOrders[existingIndex] = finalOrder;
+        } else {
+          newOrders = [finalOrder, ...state.orders];
+        }
+        return { draft: null, orders: newOrders, loading: false };
+      });
     } catch (e) {
       console.error(e);
       set({ loading: false });
