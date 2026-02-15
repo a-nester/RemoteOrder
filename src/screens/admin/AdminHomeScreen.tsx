@@ -11,6 +11,7 @@ import { SettingsScreen } from "../common/SettingsScreen";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "../../context/ThemeContext";
 import { Ionicons } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { CounterpartiesListScreen } from "./counterparties/CounterpartiesListScreen";
 import { CounterpartyEditScreen } from "./counterparties/CounterpartyEditScreen";
@@ -30,6 +31,8 @@ export default function AdminHomeScreen() {
 
   const styles = getStyles(colors);
 
+  const insets = useSafeAreaInsets();
+  
   if (currentScreen === "warehouses") {
     return <WarehouseListScreen onBack={() => setCurrentScreen("menu")} />;
   }
@@ -65,8 +68,8 @@ export default function AdminHomeScreen() {
 
   if (currentScreen === "settings") {
       return (
-          <View style={{ flex: 1 }}>
-              <View style={styles.header}>
+          <View style={{ flex: 1, backgroundColor: colors.background }}>
+              <View style={[styles.header, { paddingTop: insets.top + 10, paddingHorizontal: 16 }]}>
                   <TouchableOpacity onPress={() => setCurrentScreen("menu")} style={styles.backButton}>
                       <Ionicons name="arrow-back" size={24} color={colors.text} />
                   </TouchableOpacity>
@@ -79,27 +82,29 @@ export default function AdminHomeScreen() {
 
   if (currentScreen === "priceEditorMenu") {
       return (
-        <View style={styles.container}>
-             <View style={styles.header}>
+        <View style={{ flex: 1, backgroundColor: colors.background }}>
+             <View style={[styles.header, { paddingTop: insets.top + 10, paddingHorizontal: 16 }]}>
                   <TouchableOpacity onPress={() => setCurrentScreen("menu")} style={styles.backButton}>
                       <Ionicons name="arrow-back" size={24} color={colors.text} />
                   </TouchableOpacity>
                   <Text style={styles.headerTitle}>{t('menu.priceEditor')}</Text>
               </View>
             
-            <TouchableOpacity
-                style={styles.menuItem}
-                onPress={() => setCurrentScreen("priceDocuments")}
-            >
-                <Text style={styles.menuItemText}>📝 {t('menu.priceSettings')}</Text>
-            </TouchableOpacity>
+            <View style={{ padding: 16 }}>
+                <TouchableOpacity
+                    style={styles.menuItem}
+                    onPress={() => setCurrentScreen("priceDocuments")}
+                >
+                    <Text style={styles.menuItemText}>📝 {t('menu.priceSettings')}</Text>
+                </TouchableOpacity>
 
-            <TouchableOpacity
-                style={styles.menuItem}
-                onPress={() => setCurrentScreen("priceTypes")}
-            >
-                <Text style={styles.menuItemText}>🏷️ {t('menu.priceTypes')}</Text>
-            </TouchableOpacity>
+                <TouchableOpacity
+                    style={styles.menuItem}
+                    onPress={() => setCurrentScreen("priceTypes")}
+                >
+                    <Text style={styles.menuItemText}>🏷️ {t('menu.priceTypes')}</Text>
+                </TouchableOpacity>
+            </View>
         </View>
       )
   }
