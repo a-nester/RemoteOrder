@@ -61,6 +61,47 @@ export const OrdersService = {
     return filtered.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   },
 
+  async syncOrder(order: Order) {
+    try {
+      console.log(`Syncing order ${order.id}...`);
+      const syncPayload = {
+        userId: '1',
+        changes: [
+          {
+            id: order.id,
+            table: 'Order',
+            operation: 'INSERT',
+            data: {
+              counterpartyId: order.counterpartyId,
+              status: order.status,
+              total: order.amount,
+              items: order.items?.map((i: any) => ({
+                id: i.productId,
+                count: i.quantity,
+                price: i.price
+              })) || []
+            }
+          }
+        ]
+      };
+
+      const response = await fetch(`${API_URL}/sync/push`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(syncPayload)
+      });
+
+      if (!response.ok) {
+        const text = await response.text();
+        console.error(`Order sync failed: ${response.status} ${text}`);
+        throw new Error(text);
+      }
+      console.log(`Synced order ${order.id}`);
+    } catch (e) {
+      console.error("Order sync exception:", e);
+    }
+  },
+
   async createOrder(orderData: any) {
     await new Promise(resolve => setTimeout(resolve, 500));
 
@@ -99,6 +140,7 @@ export const OrdersService = {
           id: finalOrder.id,
           operation: operation,
           data: {
+            counterpartyId: finalOrder.counterpartyId,
             status: finalOrder.status,
             total: finalOrder.amount,
             items: finalOrder.items?.map((i: any) => ({

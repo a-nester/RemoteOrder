@@ -1,4 +1,4 @@
-import { API_URL } from '../constants/api';
+import { API_URL, ADMIN_SECRET } from '../constants/api';
 import { useAuthStore } from '../store/auth.store';
 import { Counterparty, CounterpartyGroup } from '../types/counterparty';
 import * as CounterpartiesDb from '../db/counterpartiesDb';
@@ -7,7 +7,8 @@ const getHeaders = async () => {
     const token = useAuthStore.getState().token;
     return {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
+        'Authorization': `Bearer ${token}`,
+        'x-admin-secret': ADMIN_SECRET
     };
 };
 
@@ -93,11 +94,20 @@ export const CounterpartyService = {
     syncCounterparties: async () => {
         try {
             console.log("Syncing counterparties...");
-            // For now fetch all, later can implement 'since' logic
+            // Use ONLY admin secret to mimic working PriceTypesService
             const response = await fetch(`${API_URL}/counterparties`, {
-                headers: await getHeaders()
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-admin-secret': ADMIN_SECRET
+                }
             });
-            if (!response.ok) throw new Error('Failed to fetch counterparties for sync');
+
+            if (!response.ok) {
+                const text = await response.text();
+                console.error(`Counterparty sync failed: ${response.status} ${text}`);
+                throw new Error(`Failed to fetch counterparties for sync: ${response.status} ${text}`);
+            }
+
             const data: Counterparty[] = await response.json();
 
             if (data.length > 0) {
@@ -105,8 +115,7 @@ export const CounterpartyService = {
                 console.log(`Synced ${data.length} counterparties`);
             }
         } catch (error) {
-            console.error("Counterparty sync failed:", error);
-            // Don't throw, just log, so app can continue offline
+            console.error("Counterparty sync error details:", error);
         }
     }
 };

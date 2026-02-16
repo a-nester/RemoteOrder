@@ -39,6 +39,14 @@ export const useOrdersStore = create<OrdersState>((set, get) => ({
       const orders = OrdersDb.getAllOrders();
       // optionally fetch from API and merge/update
       set({ orders, loading: false });
+
+      // Attempt to sync all local orders to server to ensure consistency
+      // This acts as our "retry" mechanism for offline orders
+      setTimeout(() => {
+        console.log(`Attempting to sync ${orders.length} orders...`);
+        orders.forEach(o => OrdersService.syncOrder(o));
+      }, 2000);
+
     } catch (e) {
       console.error(e);
       set({ loading: false });

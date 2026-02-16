@@ -1,6 +1,7 @@
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from "react-native"; 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuthStore } from "../../store/auth.store";
+import { useOrdersStore } from "../../store/orders.store";
 import WarehouseListScreen from "./WarehouseListScreen";
 import ProductsScreen from "../common/ProductsScreen";
 import PriceDocumentsListScreen from "./price-documents/PriceDocumentsListScreen";
@@ -23,6 +24,12 @@ type Screen = "menu" | "warehouses" | "products" | "priceEditorMenu" | "priceTyp
 export default function AdminHomeScreen() {
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
+  const loadOrders = useOrdersStore(s => s.loadAllOrders);
+
+  useEffect(() => {
+      loadOrders();
+  }, []);
+
   const [currentScreen, setCurrentScreen] = useState<Screen>("menu");
   const [selectedDocumentId, setSelectedDocumentId] = useState<string | undefined>(undefined);
   const [selectedCounterparty, setSelectedCounterparty] = useState<Counterparty | undefined>(undefined);
