@@ -15,8 +15,9 @@ export function initOrdersTable() {
     // Let's check for 'date' column.
     const columns = db.getAllSync("PRAGMA table_info(orders)") as any[];
     const hasDate = columns.some(c => c.name === 'date');
+    const hasCounterpartyId = columns.some(c => c.name === 'counterpartyId');
 
-    if (!hasDate && columns.length > 0) {
+    if ((!hasDate || !hasCounterpartyId) && columns.length > 0) {
       console.log("Migrating orders table: Dropping old table");
       db.execSync(`DROP TABLE IF EXISTS orders`);
     }
