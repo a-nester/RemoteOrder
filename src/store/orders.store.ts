@@ -176,10 +176,11 @@ export const useOrdersStore = create<OrdersState>((set, get) => ({
 
       // 3. Try sending to API
       try {
-        await OrdersService.createOrder(finalOrder);
-        // If success, update status to synced or similar if we had that status
+        console.log(`[SubmitOrder] Attempting immediate sync for ${finalOrder.id}`);
+        await OrdersService.syncOrder(finalOrder, 'INSERT');
+        console.log(`[SubmitOrder] Immediate sync success`);
       } catch (apiError) {
-        console.log("Offline mode: Order saved locally, will sync later");
+        console.error("[SubmitOrder] API Sync failed (Offline?):", apiError);
       }
 
       set((state) => {
@@ -194,7 +195,7 @@ export const useOrdersStore = create<OrdersState>((set, get) => ({
         return { draft: null, orders: newOrders, loading: false };
       });
     } catch (e) {
-      console.error(e);
+      console.error("[SubmitOrder] Critical error:", e);
       set({ loading: false });
     }
   },

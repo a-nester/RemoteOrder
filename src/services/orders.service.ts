@@ -61,16 +61,17 @@ export const OrdersService = {
     return filtered.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   },
 
-  async syncOrder(order: Order) {
+  async syncOrder(order: Order, operation: 'INSERT' | 'UPDATE' = 'INSERT') {
+    const userId = useAuthStore.getState().user?.id || '1';
     try {
-      console.log(`Syncing order ${order.id}...`);
+      console.log(`[Sync] Syncing order ${order.id} (${operation}) for user ${userId}...`);
       const syncPayload = {
-        userId: '1',
+        userId: userId,
         changes: [
           {
             id: order.id,
             table: 'Order',
-            operation: 'INSERT',
+            operation: operation,
             data: {
               counterpartyId: order.counterpartyId,
               status: order.status,
@@ -85,20 +86,36 @@ export const OrdersService = {
         ]
       };
 
+      console.log(`[Sync] Sending request to ${API_URL}/sync/push`);
       const response = await fetch(`${API_URL}/sync/push`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(syncPayload)
       });
 
-      if (!response.ok) {
-        const text = await response.text();
-        console.error(`Order sync failed: ${response.status} ${text}`);
-        throw new Error(text);
+      const json = await response.json();
+      console.log(`[Sync] Server Response:`, JSON.stringify(json));
+
+      if (!response.ok || (json.success === false)) {
+        const errorMsg = json.error || JSON.stringify(json);
+        console.error(`[Sync] Order sync failed: ${response.status} ${errorMsg}`);
+        throw new Error(errorMsg);
       }
-      console.log(`Synced order ${order.id}`);
+
+      // Check individual results
+      if (json.results) {
+        json.results.forEach((res: any) => {
+          if (!res.success) {
+            console.error(`[Sync] Item sync failed: ${res.error}`);
+            throw new Error(res.error);
+          }
+        });
+      }
+
+      console.log(`[Sync] Successfully synced order ${order.id}`);
     } catch (e) {
-      console.error("Order sync exception:", e);
+      console.error("[Sync] Order sync exception:", e);
+      throw e; // Rethrow so createOrder waits/fails
     }
   },
 
@@ -132,33 +149,9 @@ export const OrdersService = {
       operation = 'INSERT';
     }
 
-    // SYNC TO SERVER (Background)
-    const syncPayload = {
-      userId: '1',
-      changes: [
-        {
-          id: finalOrder.id,
-          operation: operation,
-          data: {
-            counterpartyId: finalOrder.counterpartyId,
-            status: finalOrder.status,
-            total: finalOrder.amount,
-            items: finalOrder.items?.map((i: any) => ({
-              id: i.productId,
-              count: i.quantity,
-              price: i.price
-            })) || []
-          }
-        }
-      ]
-    };
-
-    // Use API_URL from imports
-    fetch(`${API_URL}/sync/push`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(syncPayload)
-    }).catch(err => console.log("Background sync failed (Offline?):", err));
+    // SYNC TO SERVER (Awaiting now)
+    console.log(`[Sync] Triggering immediate sync for order ${finalOrder.id}`);
+    await this.syncOrder(finalOrder, operation);
 
     return finalOrder;
   },
