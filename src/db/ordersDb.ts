@@ -16,8 +16,9 @@ export function initOrdersTable() {
     const columns = db.getAllSync("PRAGMA table_info(orders)") as any[];
     const hasDate = columns.some(c => c.name === 'date');
     const hasCounterpartyId = columns.some(c => c.name === 'counterpartyId');
+    const hasIsDeleted = columns.some(c => c.name === 'isDeleted');
 
-    if ((!hasDate || !hasCounterpartyId) && columns.length > 0) {
+    if ((!hasDate || !hasCounterpartyId || !hasIsDeleted) && columns.length > 0) {
       console.log("Migrating orders table: Dropping old table");
       db.execSync(`DROP TABLE IF EXISTS orders`);
     }
@@ -34,11 +35,21 @@ export function initOrderItemsTable() {
 
 
 /**
- * GET ALL ORDERS (Non-Drafts)
+ * GET ALL ORDERS (Non-Drafts, Non-Deleted)
  */
 export function getAllOrders(): Order[] {
   const orders = db.getAllSync<any>(
-    "SELECT * FROM orders WHERE isDraft = 0 ORDER BY createdAt DESC"
+    "SELECT * FROM orders WHERE isDraft = 0 AND isDeleted = 0 ORDER BY createdAt DESC"
+  );
+  return orders.map(mapOrderFromDb);
+}
+
+/**
+ * GET ARCHIVED ORDERS (Deleted)
+ */
+export function getArchivedOrders(): Order[] {
+  const orders = db.getAllSync<any>(
+    "SELECT * FROM orders WHERE isDeleted = 1 ORDER BY updatedAt DESC"
   );
   return orders.map(mapOrderFromDb);
 }
@@ -70,8 +81,8 @@ export function saveOrder(order: Order) {
   db.withTransactionSync(() => {
     // 1. Upsert Order
     db.runSync(
-      `INSERT OR REPLACE INTO orders (id, date, counterpartyId, counterpartyName, amount, currency, status, createdAt, updatedAt, clientId, clientEmail, comment, isDraft)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT OR REPLACE INTO orders (id, date, counterpartyId, counterpartyName, amount, currency, status, createdAt, updatedAt, clientId, clientEmail, comment, isDraft, isDeleted)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         order.id,
         order.date,
@@ -85,7 +96,8 @@ export function saveOrder(order: Order) {
         order.clientId || null,
         order.clientEmail || null,
         order.comment || null,
-        order.isDraft
+        order.isDraft,
+        order.isDeleted || 0
       ]
     );
 
@@ -112,11 +124,17 @@ export function saveOrder(order: Order) {
 }
 
 /**
- * DELETE ORDER
+ * DELETE ORDER (Soft Delete)
  */
 export function deleteOrder(id: string) {
+  db.runSync("UPDATE orders SET isDeleted = 1, updatedAt = ? WHERE id = ?", [Date.now(), id]);
+}
+
+/**
+ * HARD DELETE ORDER (Admin Only)
+ */
+export function hardDeleteOrder(id: string) {
   db.runSync("DELETE FROM orders WHERE id = ?", [id]);
-  // Cascade delete handles items, but to be sure/if no foreign key support enabled:
   db.runSync("DELETE FROM order_items WHERE orderId = ?", [id]);
 }
 

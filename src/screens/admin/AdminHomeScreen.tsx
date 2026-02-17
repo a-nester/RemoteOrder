@@ -18,8 +18,9 @@ import { CounterpartiesListScreen } from "./counterparties/CounterpartiesListScr
 import { CounterpartyEditScreen } from "./counterparties/CounterpartyEditScreen";
 import { Counterparty } from "../../types/counterparty";
 import OrdersScreen from "../common/OrdersScreen";
+import OrdersArchiveScreen from "../common/OrdersArchiveScreen";
 
-type Screen = "menu" | "warehouses" | "products" | "priceEditorMenu" | "priceTypes" | "priceDocuments" | "priceDocumentEditor" | "settings" | "counterparties" | "counterpartyEdit" | "orders";
+type Screen = "menu" | "warehouses" | "products" | "priceEditorMenu" | "priceTypes" | "priceDocuments" | "priceDocumentEditor" | "settings" | "counterparties" | "counterpartyEdit" | "orders" | "ordersArchive";
 
 export default function AdminHomeScreen() {
   const user = useAuthStore((s) => s.user);
@@ -76,6 +77,10 @@ export default function AdminHomeScreen() {
 
   if (currentScreen === "orders") {
       return <OrdersScreen onBack={() => setCurrentScreen("menu")} />;
+  }
+
+  if (currentScreen === "ordersArchive") {
+      return <OrdersArchiveScreen onBack={() => setCurrentScreen("menu")} />;
   }
 
   if (currentScreen === "settings") {
@@ -192,6 +197,13 @@ export default function AdminHomeScreen() {
             onPress={() => setCurrentScreen("orders")}
         >
             <Text style={styles.menuItemText}>🛒 {t('menu.orders')}</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => setCurrentScreen("ordersArchive")}
+        >
+            <Text style={styles.menuItemText}>📁 {t('menu.archive')}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity

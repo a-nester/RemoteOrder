@@ -76,6 +76,7 @@ export const OrdersService = {
               counterpartyId: order.counterpartyId,
               status: order.status,
               total: order.amount,
+              isDeleted: order.isDeleted,
               items: order.items?.map((i: any) => ({
                 id: i.productId,
                 count: i.quantity,
@@ -116,6 +117,38 @@ export const OrdersService = {
     } catch (e) {
       console.error("[Sync] Order sync exception:", e);
       throw e; // Rethrow so createOrder waits/fails
+    }
+  },
+
+  async deleteOrder(id: string) {
+    const userId = useAuthStore.getState().user?.id || '1';
+    try {
+      console.log(`[Sync] Hard Deleting order ${id}...`);
+      const syncPayload = {
+        userId: userId,
+        changes: [
+          {
+            id: id,
+            table: 'Order',
+            operation: 'DELETE',
+            data: {}
+          }
+        ]
+      };
+
+      const response = await fetch(`${API_URL}/sync/push`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(syncPayload)
+      });
+
+      const json = await response.json();
+      if (!response.ok || (json.success === false)) {
+        throw new Error(json.error || "Delete failed");
+      }
+    } catch (e) {
+      console.error("[Sync] Hard Delete exception:", e);
+      throw e;
     }
   },
 

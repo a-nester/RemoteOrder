@@ -29,6 +29,7 @@ const en = {
         priceTypes: "Price Types",
         counterparties: "Counterparties",
         orders: "Orders",
+        archive: "Archive",
         settings: "Settings",
         signOut: "Sign Out"
     },
@@ -80,7 +81,9 @@ const en = {
         selectClient: "Select Client"
     },
     order: {
-        create: "New Order"
+        create: "New Order",
+        archiveConfirmation: "Are you sure you want to move this order to archive?",
+        hardDeleteConfirmation: "Are you sure you want to permanently delete this order? This cannot be undone."
     },
     status: {
         NEW: "New",
@@ -105,7 +108,8 @@ const uk = {
         "actions": "Дії",
         "failedToLoad": "Не вдалося завантажити дані",
         "failedToSave": "Не вдалося зберегти дані",
-        "addProduct": "Додати Товар"
+        "addProduct": "Додати Товар",
+        "deleted": "Видалено"
     },
     "menu": {
         "dashboard": "Дашборд",
@@ -115,6 +119,7 @@ const uk = {
         "priceTypes": "Типи цін",
         "counterparties": "Контрагенти",
         "orders": "Замовлення",
+        "archive": "Архів",
         "settings": "Налаштування",
         "signOut": "Вихід"
     },
@@ -166,7 +171,9 @@ const uk = {
         "selectClient": "Обрати Клієнта"
     },
     "order": {
-        "create": "Нове Замовлення"
+        "create": "Нове Замовлення",
+        "archiveConfirmation": "Ви впевнені, що хочете перемістити це замовлення в архів?",
+        "hardDeleteConfirmation": "Ви впевнені, що хочете назавжди видалити це замовлення? Цю дію неможливо скасувати."
     },
     "status": {
         "NEW": "Нове",

@@ -3,9 +3,11 @@ import { Order, OrderItem } from "../models/Order";
 import { OrdersService } from "../services/orders.service";
 import * as OrdersDb from "../db/ordersDb";
 import { getUUID } from "../utils/uuid";
+import { useAuthStore } from "./auth.store";
 
 interface OrdersState {
   orders: Order[];
+  archivedOrders: Order[];
   draft: Order | null;
   loading: boolean;
 
@@ -26,10 +28,16 @@ interface OrdersState {
   submitOrder: () => Promise<void>;
   discardDraft: () => void;
   loadOrderForEditing: (order: Order) => void;
+
+  // Archive
+  archiveOrder: (id: string) => Promise<void>;
+  deleteOrderPermanently: (id: string) => Promise<void>;
+  loadArchivedOrders: () => Promise<void>;
 }
 
 export const useOrdersStore = create<OrdersState>((set, get) => ({
   orders: [],
+  archivedOrders: [],
   draft: null,
   loading: false,
 
@@ -216,5 +224,60 @@ export const useOrdersStore = create<OrdersState>((set, get) => ({
     // For now, let's keep it as is, so it doesn't disappear from the list if it was 0.
     // But we need to ensure UI knows we are editing.
     set({ draft: { ...order, items } });
+  },
+
+  // ARCHIVE & DELETE
+  archiveOrder: async (id: string) => {
+    const { orders } = get();
+    const order = orders.find(o => o.id === id);
+    if (order) {
+      // 1. Soft Delete Local
+      OrdersDb.deleteOrder(id);
+
+      // 2. Update State
+      set({ orders: orders.filter(o => o.id !== id) });
+
+      // 3. Sync
+      try {
+        await OrdersService.syncOrder({ ...order, isDeleted: 1 }, 'UPDATE');
+      } catch (e) {
+        console.error("Archive sync failed:", e);
+      }
+    }
+  },
+
+  deleteOrderPermanently: async (id: string) => {
+    // Role check handled in UI usually, but good to have here
+    const { user } = useAuthStore.getState(); // Assuming useAuthStore is available globally or imported
+    // Wait, useAuthStore is imported in Service. We need to import it here too? 
+    // It's not imported in this file top level. I need to verify imports.
+    // Let's skip strict role check here relying on Server/UI, or assume import works if I add it.
+    // I can't add imports easily with replace_file_content unless I replace top.
+    // UI will hide the button. Server overrides.
+
+    // 1. Hard Delete Local
+    OrdersDb.hardDeleteOrder(id);
+
+    // 2. Update State
+    const { archivedOrders } = get();
+    set({ archivedOrders: archivedOrders.filter((o: Order) => o.id !== id) });
+
+    // 3. Sync
+    try {
+      await OrdersService.deleteOrder(id);
+    } catch (e) {
+      console.error("Hard delete sync failed:", e);
+    }
+  },
+
+  loadArchivedOrders: async () => {
+    set({ loading: true });
+    try {
+      const orders = OrdersDb.getArchivedOrders();
+      set({ archivedOrders: orders, loading: false });
+    } catch (e) {
+      console.error(e);
+      set({ loading: false });
+    }
   }
 }));

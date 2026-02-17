@@ -28,5 +28,6 @@ export type Order = {
   clientEmail?: string;
   comment?: string;
   isDraft: number; // 0 or 1 for SQLite boolean
+  isDeleted?: number; // 0 or 1
   items: OrderItem[];
 };

@@ -3,32 +3,26 @@ import React, { useState, useEffect, useCallback } from "react";
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, ActivityIndicator, Alert } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "../../context/ThemeContext";
-import { OrdersService, OrderFilter } from "../../services/orders.service";
 import { useOrdersStore } from "../../store/orders.store";
 import { Order, OrderStatus } from "../../models/Order";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useAuthStore } from "../../store/auth.store";
 
-import OrderCreateScreen from "../orders/OrderCreateScreen";
-
-// ... inside component ...
-
-interface OrdersScreenProps {
+interface OrdersArchiveScreenProps {
     onBack: () => void;
 }
 
-export default function OrdersScreen({ onBack }: OrdersScreenProps) {
+export default function OrdersArchiveScreen({ onBack }: OrdersArchiveScreenProps) {
     const { t } = useTranslation();
     const { colors } = useTheme();
     const insets = useSafeAreaInsets();
     const styles = getStyles(colors);
+    const user = useAuthStore((state) => state.user);
 
     const [orders, setOrders] = useState<Order[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
-
-    // State for creating new order
-    const [isCreating, setIsCreating] = useState(false);
     
     // Default date range: current month
     const [startDate, setStartDate] = useState(() => {
@@ -44,16 +38,10 @@ export default function OrdersScreen({ onBack }: OrdersScreenProps) {
     const loadOrders = useCallback(async () => {
         setLoading(true);
         try {
-            // Fetch from Local DB instead of Mock Service
-            // We import OrdersDb directly or via Store. 
-            // For now, let's use OrdersDb directly as it's cleaner than store for filtering
-            // Note: In real app, might want to move this to Service or Store
-            const allOrders = await Promise.resolve(require("../../db/ordersDb").getAllOrders());
+            // Fetch Archived Orders from Local DB
+            const allOrders = await Promise.resolve(require("../../db/ordersDb").getArchivedOrders());
             
-            console.log(`[DB Verify] Loaded ${allOrders.length} orders from Local DB.`);
-            if (allOrders.length > 0) {
-                 console.log(`[DB Verify] Latest Order: ${JSON.stringify(allOrders[0])}`);
-            }
+            console.log(`[Archive] Loaded ${allOrders.length} archived orders.`);
 
             // Client-side filtering
             let filtered = allOrders;
@@ -78,7 +66,7 @@ export default function OrdersScreen({ onBack }: OrdersScreenProps) {
             
             setOrders(filtered);
         } catch (error) {
-            console.error("Failed to load orders", error);
+            console.error("Failed to load archived orders", error);
             Alert.alert(t('common.error'), t('common.failedToLoad'));
         } finally {
             setLoading(false);
@@ -89,31 +77,15 @@ export default function OrdersScreen({ onBack }: OrdersScreenProps) {
         loadOrders();
     }, [loadOrders]);
 
-    const handleCreateOrder = () => {
-        setIsCreating(true);
-    };
-
-    const handleSaveSuccess = () => {
-        setIsCreating(false);
-        loadOrders();
-    };
-
-    const handleEditOrder = (order: Order) => {
-        // Load order into store "draft"
-        useOrdersStore.getState().loadOrderForEditing(order);
-        setIsCreating(true);
-    };
-
     const getStatusColor = (status: OrderStatus) => {
         switch (status) {
-            case "NEW": return colors.primary; // Blue-ish usually
-            case "ACCEPTED": return "#F59E0B"; // Amazon Orange/Yellow
-            case "COMPLETED": return "#10B981"; // Emerald Green
+            case "NEW": return colors.primary; 
+            case "ACCEPTED": return "#F59E0B"; 
+            case "COMPLETED": return "#10B981"; 
             default: return colors.text;
         }
     };
     
-    // Simple Badge Component
     const StatusBadge = ({ status }: { status: OrderStatus }) => (
         <View style={[styles.badge, { backgroundColor: getStatusColor(status) + '20' }]}>
             <Text style={[styles.badgeText, { color: getStatusColor(status) }]}>
@@ -122,18 +94,27 @@ export default function OrdersScreen({ onBack }: OrdersScreenProps) {
         </View>
     );
 
-    const handleDeleteOrder = (order: Order) => {
+    const handleHardDelete = (order: Order) => {
+        if (user?.role !== 'admin') {
+            Alert.alert(t('common.error'), t('error.adminOnly', 'Only admins can perform this action'));
+            return;
+        }
+
         Alert.alert(
-            t('common.delete', 'Delete'),
-            t('order.archiveConfirmation', 'Are you sure you want to delete this order? It will be moved to archive.'),
+            t('common.delete', 'Delete Permanently'),
+            t('order.hardDeleteConfirmation', 'Are you sure you want to permanently delete this order? This cannot be undone.'),
             [
                 { text: t('common.cancel'), style: 'cancel' },
                 { 
                     text: t('common.delete'), 
                     style: 'destructive', 
                     onPress: async () => {
-                        await useOrdersStore.getState().archiveOrder(order.id);
-                        loadOrders();
+                        try {
+                            await useOrdersStore.getState().deleteOrderPermanently(order.id);
+                            loadOrders();
+                        } catch (e) {
+                             Alert.alert(t('common.error'), t('common.failedToDelete'));
+                        }
                     }
                 }
             ]
@@ -145,27 +126,28 @@ export default function OrdersScreen({ onBack }: OrdersScreenProps) {
             <View style={styles.cardRowHeader}>
                  <View style={styles.rowLeft}>
                     <Text style={styles.dateText}>{new Date(item.date).toLocaleDateString()}</Text>
-                    <Text style={styles.counterpartyText} numberOfLines={1}>{item.counterpartyName}</Text>
+                    <Text style={[styles.counterpartyText, { textDecorationLine: 'line-through', opacity: 0.7 }]} numberOfLines={1}>{item.counterpartyName}</Text>
                  </View>
                  <View style={styles.rowRight}>
                     <Text style={styles.amountText}>{item.amount.toFixed(2)}</Text>
                     <StatusBadge status={item.status} />
                     
-                    <TouchableOpacity onPress={() => handleEditOrder(item)} style={styles.actionButton}>
-                        <Ionicons name="pencil" size={18} color={colors.primary} />
-                    </TouchableOpacity>
-                    
-                    <TouchableOpacity onPress={() => handleDeleteOrder(item)} style={styles.actionButton}>
-                        <Ionicons name="trash-outline" size={18} color={colors.danger} />
-                    </TouchableOpacity>
+                    {/* Hard Delete Button (Admin Only or visible but protected?) */}
+                    {/* Visible to all, but action checks role, or hide? */}
+                    {/* Requirement: "functionality... accessible only to administrators". Visual hiding is better UX. */}
+                    {user?.role === 'admin' && (
+                        <TouchableOpacity onPress={() => handleHardDelete(item)} style={styles.actionButton}>
+                            <Ionicons name="trash" size={18} color={colors.danger} />
+                        </TouchableOpacity>
+                    )}
                  </View>
+            </View>
+            {/* Deleted Label */}
+            <View style={styles.deletedLabel}>
+                <Text style={styles.deletedText}>{t('common.deleted', 'Deleted')}</Text>
             </View>
         </View>
     );
-
-    if (isCreating) {
-        return <OrderCreateScreen onBack={() => setIsCreating(false)} onSaveSuccess={handleSaveSuccess} />;
-    }
 
     return (
         <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -174,15 +156,12 @@ export default function OrdersScreen({ onBack }: OrdersScreenProps) {
                 <TouchableOpacity onPress={onBack} style={styles.backButton}>
                     <Ionicons name="arrow-back" size={24} color={colors.text} />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>{t('menu.orders')}</Text>
-                <TouchableOpacity onPress={handleCreateOrder} style={styles.createButton}>
-                     <Ionicons name="add" size={24} color={colors.background} />
-                </TouchableOpacity>
+                <Text style={styles.headerTitle}>{t('menu.archive', 'Order Archive')}</Text>
+                <View style={{ width: 36 }} /> 
             </View>
 
             {/* Filters */}
             <View style={styles.filtersContainer}>
-                {/* ... existing filters ... */}
                 <View style={styles.dateRow}>
                      <TextInput 
                         style={styles.dateInput}
@@ -223,7 +202,7 @@ export default function OrdersScreen({ onBack }: OrdersScreenProps) {
                     keyExtractor={item => item.id}
                     contentContainerStyle={styles.listContent}
                     ListEmptyComponent={
-                        <Text style={styles.emptyText}>{t('common.noData', 'No orders found')}</Text>
+                        <Text style={styles.emptyText}>{t('common.noData', 'No archived orders')}</Text>
                     }
                 />
             )}
@@ -251,14 +230,6 @@ const getStyles = (colors: any) => StyleSheet.create({
         fontSize: 20,
         fontWeight: 'bold',
         color: colors.text
-    },
-    createButton: {
-        backgroundColor: colors.primary,
-        borderRadius: 20,
-        width: 36,
-        height: 36,
-        alignItems: 'center',
-        justifyContent: 'center'
     },
     filtersContainer: {
         padding: 16,
@@ -311,7 +282,8 @@ const getStyles = (colors: any) => StyleSheet.create({
         shadowRadius: 4,
         elevation: 2,
         borderWidth: 1,
-        borderColor: colors.border
+        borderColor: colors.itemBorder || colors.border, // Use itemBorder if avail
+        opacity: 0.8
     },
     cardRowHeader: {
         flexDirection: 'row',
@@ -364,5 +336,17 @@ const getStyles = (colors: any) => StyleSheet.create({
         color: colors.text,
         marginTop: 20,
         opacity: 0.6
+    },
+    deletedLabel: {
+        marginTop: 5,
+        backgroundColor: '#fee2e2',
+        alignSelf: 'flex-start',
+        paddingHorizontal: 6,
+        borderRadius: 4
+    },
+    deletedText: {
+        color: '#ef4444',
+        fontSize: 10,
+        fontWeight: 'bold'
     }
 });

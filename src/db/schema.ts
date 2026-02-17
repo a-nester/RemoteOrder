@@ -12,7 +12,8 @@ CREATE TABLE IF NOT EXISTS orders (
   clientId TEXT,
   clientEmail TEXT,
   comment TEXT,
-  isDraft INTEGER DEFAULT 0
+  isDraft INTEGER DEFAULT 0,
+  isDeleted INTEGER DEFAULT 0
 );
 `;
 
