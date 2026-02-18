@@ -1,6 +1,7 @@
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuthStore } from "../../store/auth.store";
+import { useWarehouseStore } from "../../store/warehouse.store";
 import CreateOrderScreen from "./CreateOrderScreen";
 import OrderListScreen from "./OrderListScreen";
 import WarehouseScreen from "./WarehouseScreen";
@@ -10,7 +11,12 @@ type Screen = "menu" | "create_order" | "order_list" | "warehouse" | "products";
 
 export default function ManagerHomeScreen() {
   const logout = useAuthStore((s) => s.logout);
+  const loadWarehouses = useWarehouseStore((s) => s.loadWarehouses);
   const [currentScreen, setCurrentScreen] = useState<Screen>("menu");
+
+  useEffect(() => {
+      loadWarehouses();
+  }, []);
 
   const renderScreen = () => {
     switch (currentScreen) {

@@ -80,3 +80,13 @@ CREATE TABLE IF NOT EXISTS counterparties (
   isDeleted INTEGER DEFAULT 0
 );
 `;
+
+export const CREATE_WAREHOUSES_TABLE = `
+CREATE TABLE IF NOT EXISTS warehouses (
+  id TEXT PRIMARY KEY NOT NULL,
+  name TEXT NOT NULL,
+  address TEXT,
+  updatedAt INTEGER,
+  isDeleted INTEGER DEFAULT 0
+);
+`;

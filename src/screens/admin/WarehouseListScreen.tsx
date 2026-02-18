@@ -3,11 +3,10 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
-  TextInput,
   FlatList,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useState } from "react";
+import { useEffect } from "react";
 import { useWarehouseStore } from "../../store/warehouse.store";
 
 interface Props {
@@ -16,31 +15,19 @@ interface Props {
 
 export default function WarehouseListScreen({ onBack }: Props) {
   const warehouses = useWarehouseStore((s) => s.warehouses);
-  const addWarehouse = useWarehouseStore((s) => s.addWarehouse);
-  const removeWarehouse = useWarehouseStore((s) => s.removeWarehouse);
+  const syncWarehouses = useWarehouseStore((s) => s.syncWarehouses);
+  const loading = useWarehouseStore((s) => s.loading);
 
-  const [newName, setNewName] = useState("");
-
-  const handleAdd = () => {
-    if (newName.trim()) {
-      addWarehouse(newName.trim());
-      setNewName("");
-    }
-  };
+  useEffect(() => {
+    useWarehouseStore.getState().loadWarehouses();
+  }, []);
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
-      <Text style={styles.title}>Управління складами</Text>
-
-      <View style={styles.inputContainer}>
-        <TextInput
-          style={styles.input}
-          placeholder="Назва нового складу"
-          value={newName}
-          onChangeText={setNewName}
-        />
-        <TouchableOpacity style={styles.addButton} onPress={handleAdd}>
-          <Text style={styles.addButtonText}>+</Text>
+      <View style={styles.header}>
+        <Text style={styles.title}>Склади</Text>
+        <TouchableOpacity onPress={() => syncWarehouses()} disabled={loading} style={styles.syncButton}>
+            <Text style={styles.syncIcon}>{loading ? "..." : "🔄"}</Text>
         </TouchableOpacity>
       </View>
 
@@ -49,13 +36,16 @@ export default function WarehouseListScreen({ onBack }: Props) {
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <View style={styles.item}>
-            <Text style={styles.itemText}>{item.name}</Text>
-            <TouchableOpacity onPress={() => removeWarehouse(item.id)}>
-              <Text style={styles.deleteText}>Видалити</Text>
-            </TouchableOpacity>
+            <View>
+                <Text style={styles.itemText}>{item.name}</Text>
+                {item.address && <Text style={styles.itemSubText}>{item.address}</Text>}
+            </View>
           </View>
         )}
         style={styles.list}
+        ListEmptyComponent={
+            <Text style={styles.emptyText}>Немає складів. Натисніть 🔄 щоб оновити.</Text>
+        }
       />
 
       <TouchableOpacity onPress={onBack} style={styles.backButton}>
@@ -71,51 +61,44 @@ const styles = StyleSheet.create({
     padding: 16,
     backgroundColor: "#fff",
   },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
   title: {
     fontSize: 24,
     fontWeight: "bold",
-    marginBottom: 20,
-    textAlign: "center",
   },
-  inputContainer: {
-    flexDirection: "row",
-    marginBottom: 20,
-  },
-  input: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 8,
+  syncButton: {
     padding: 10,
-    marginRight: 10,
   },
-  addButton: {
-    backgroundColor: "#007AFF",
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: 15,
-    borderRadius: 8,
-  },
-  addButtonText: {
-    color: "#fff",
-    fontSize: 24,
+  syncIcon: {
+      fontSize: 24,
   },
   list: {
     flex: 1,
   },
   item: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
     padding: 15,
     borderBottomWidth: 1,
     borderBottomColor: "#eee",
   },
   itemText: {
-    fontSize: 16,
+    fontSize: 18,
+    fontWeight: '500',
   },
-  deleteText: {
-    color: "red",
+  itemSubText: {
+      fontSize: 14,
+      color: '#666',
+      marginTop: 4,
+  },
+  emptyText: {
+      textAlign: 'center',
+      marginTop: 20,
+      color: '#888',
+      fontSize: 16,
   },
   backButton: {
     padding: 15,

@@ -2,6 +2,7 @@ import * as SQLite from "expo-sqlite";
 import { initOrdersTable, initOrderItemsTable } from "./ordersDb";
 import { initProductsTable } from "./productsDb";
 import { initCounterpartiesTable } from "./counterpartiesDb";
+import { initWarehousesTable } from "./warehousesDb";
 
 export async function initDB() {
   console.log("Initializing Database...");
@@ -15,6 +16,8 @@ export async function initDB() {
     initProductsTable();
     console.log("Init Counterparties Table...");
     initCounterpartiesTable();
+    console.log("Init Warehouses Table...");
+    initWarehousesTable();
     console.log("Database Initialization Complete.");
   } catch (e) {
     console.error("Database Initialization Failed:", e);

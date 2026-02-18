@@ -1,40 +1,42 @@
 import { create } from "zustand";
-import { persist, createJSONStorage } from "zustand/middleware";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-
-export type Warehouse = {
-    id: string;
-    name: string;
-};
+import { WarehousesDb } from "../db/warehousesDb";
+import { WarehouseService } from "../services/warehouse.service";
+import { Warehouse } from "../types/warehouse";
 
 interface WarehouseState {
     warehouses: Warehouse[];
-    addWarehouse: (name: string) => void;
-    removeWarehouse: (id: string) => void;
+    loading: boolean;
+    loadWarehouses: () => Promise<void>;
+    syncWarehouses: () => Promise<void>;
 }
 
-export const useWarehouseStore = create<WarehouseState>()(
-    persist(
-        (set) => ({
-            warehouses: [
-                { id: "1", name: "Main Warehouse" },
-                { id: "2", name: "Kyiv Branch" },
-            ],
-            addWarehouse: (name) =>
-                set((state) => ({
-                    warehouses: [
-                        ...state.warehouses,
-                        { id: Math.random().toString(36).substr(2, 9), name },
-                    ],
-                })),
-            removeWarehouse: (id) =>
-                set((state) => ({
-                    warehouses: state.warehouses.filter((w) => w.id !== id),
-                })),
-        }),
-        {
-            name: "warehouse-storage",
-            storage: createJSONStorage(() => AsyncStorage),
+export const useWarehouseStore = create<WarehouseState>((set, get) => ({
+    warehouses: [],
+    loading: false,
+
+    loadWarehouses: async () => {
+        set({ loading: true });
+        try {
+            const data = await WarehousesDb.getAll();
+            set({ warehouses: data });
+        } catch (error) {
+            console.error("Failed to load warehouses", error);
+        } finally {
+            set({ loading: false });
         }
-    )
-);
+    },
+
+    syncWarehouses: async () => {
+        set({ loading: true });
+        try {
+            // 1. Fetch from server & Save to DB
+            await WarehouseService.sync();
+            // 2. Reload from DB
+            await get().loadWarehouses();
+        } catch (error) {
+            console.error("Failed to sync warehouses", error);
+        } finally {
+            set({ loading: false });
+        }
+    }
+}));

@@ -60,6 +60,16 @@ const en = {
         applyPrices: "Apply Prices",
         applied: "APPLIED"
     },
+    organization: {
+        title: "Organization Settings",
+        details: "Organization Details",
+        name: "Name",
+        warehouses: "Warehouses"
+    },
+    warehouse: {
+        add: "Add Warehouse",
+        edit: "Edit Warehouse"
+    },
     counterparties: {
         title: "Counterparties",
         newGroup: "New Group",
@@ -117,6 +127,7 @@ const uk = {
         "priceEditor": "Редактор Цін",
         "priceSettings": "Установка цін",
         "priceTypes": "Типи цін",
+        "organizationSettings": "Організація",
         "counterparties": "Контрагенти",
         "orders": "Замовлення",
         "archive": "Архів",
@@ -149,6 +160,16 @@ const uk = {
         "targetPrice": "Вихідна Ціна",
         "applyPrices": "Застосувати Ціни",
         "applied": "ЗАСТОСОВАНО"
+    },
+    organization: {
+        title: "Налаштування Організації",
+        details: "Деталі Організації",
+        name: "Назва",
+        warehouses: "Склади"
+    },
+    warehouse: {
+        add: "Додати Склад",
+        edit: "Редагувати Склад"
     },
     "counterparties": {
         "title": "Контрагенти",
