@@ -42,7 +42,8 @@ export default function OrderCreateScreen({ onBack, onSaveSuccess }: OrderCreate
         updateDraftComment, 
         saveDraft, 
         submitOrder,
-        discardDraft 
+        discardDraft,
+        updateDraftCounterparty 
     } = useOrdersStore();
 
     // Local state for UI
@@ -96,13 +97,35 @@ export default function OrderCreateScreen({ onBack, onSaveSuccess }: OrderCreate
 
     const handleSelectClient = (client: any) => {
         if (draft) {
-             // Creating new draft happens in initDraft, but here we update existing
-             // Use new store action if available or just update draft state manually if simple
-             // However, best practice is to use store action
-             // Since I added updateDraftCounterparty to store interface in previous step:
-             // Note: I must ensure it is available in destructured props
-             // Let's assume it is or I need to update the destructuring above
-             useOrdersStore.getState().updateDraftCounterparty({ id: client.id, name: client.name });
+             updateDraftCounterparty({ id: client.id, name: client.name });
+             
+             // Recalculate prices for existing items
+             if (draft.items.length > 0) {
+                 const priceType = priceTypes.find(pt => pt.id === client.priceTypeId);
+                 const priceKey = priceType?.slug || 'standard';
+                 
+                 draft.items.forEach(item => {
+                     const product = products.find(p => p.id === item.productId);
+                     if (product && product.prices) {
+                         let newPrice = 0;
+                         // Safe access to loose types
+                         const prices: any = product.prices;
+                         
+                         if (prices[priceKey] !== undefined) {
+                             newPrice = Number(prices[priceKey]);
+                         } else if (prices['standard'] !== undefined) {
+                             newPrice = Number(prices['standard']);
+                         }
+                         
+                         if (newPrice !== item.price) {
+                             updateDraftItem(item.id, { 
+                                 price: newPrice, 
+                                 total: newPrice * item.quantity 
+                             });
+                         }
+                     }
+                 });
+             }
         } else {
              initDraft({ id: client.id, name: client.name });
         }
@@ -292,6 +315,30 @@ export default function OrderCreateScreen({ onBack, onSaveSuccess }: OrderCreate
                 <View style={{ height: 100 }} /> 
             </ScrollView>
 
+
+            {/* Client Selection Modal */}
+            <Modal visible={clientModalVisible} animationType="slide">
+                <View style={[styles.modalContainer, { paddingTop: insets.top }]}>
+                    <View style={styles.modalHeader}>
+                            <Text style={styles.modalTitle}>{t('action.selectClient', 'Select Client')}</Text>
+                            <TouchableOpacity onPress={() => setClientModalVisible(false)}>
+                                <Ionicons name="close" size={24} color={colors.text} />
+                            </TouchableOpacity>
+                    </View>
+                    <FlatList 
+                        data={clients}
+                        keyExtractor={item => item.id}
+                        renderItem={({ item }) => (
+                            <TouchableOpacity 
+                                style={styles.listItem} 
+                                onPress={() => handleSelectClient(item)}
+                            >
+                                <Text style={styles.listItemText}>{item.name}</Text>
+                            </TouchableOpacity>
+                        )}
+                    />
+                </View>
+            </Modal>
 
             {/* Product Selection Modal */}
             <Modal visible={productModalVisible} animationType="slide">

@@ -64,7 +64,6 @@ export const OrdersService = {
   async syncOrder(order: Order, operation: 'INSERT' | 'UPDATE' = 'INSERT') {
     const userId = useAuthStore.getState().user?.id || '1';
     try {
-      console.log(`[Sync] Syncing order ${order.id} (${operation}) for user ${userId}...`);
       const syncPayload = {
         userId: userId,
         changes: [
@@ -87,7 +86,6 @@ export const OrdersService = {
         ]
       };
 
-      console.log(`[Sync] Sending request to ${API_URL}/sync/push`);
       const response = await fetch(`${API_URL}/sync/push`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -95,7 +93,6 @@ export const OrdersService = {
       });
 
       const json = await response.json();
-      console.log(`[Sync] Server Response:`, JSON.stringify(json));
 
       if (!response.ok || (json.success === false)) {
         const errorMsg = json.error || JSON.stringify(json);
@@ -112,8 +109,6 @@ export const OrdersService = {
           }
         });
       }
-
-      console.log(`[Sync] Successfully synced order ${order.id}`);
     } catch (e) {
       console.error("[Sync] Order sync exception:", e);
       throw e; // Rethrow so createOrder waits/fails

@@ -106,7 +106,7 @@ export function saveOrder(order: Order) {
 
     for (const item of order.items) {
       db.runSync(
-        `INSERT INTO order_items (id, orderId, productId, productName, quantity, price, unit, total)
+        `INSERT OR REPLACE INTO order_items (id, orderId, productId, productName, quantity, price, unit, total)
                VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           item.id,
@@ -140,8 +140,9 @@ export function hardDeleteOrder(id: string) {
 
 // Helper to map DB row to Order object
 function mapOrderFromDb(row: any): Order {
+  const items = getOrderItems(row.id);
   return {
     ...row,
-    items: [] // Items loaded separately usually, or we could load them here if needed
+    items: items || []
   };
 }

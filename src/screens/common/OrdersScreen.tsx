@@ -1,7 +1,9 @@
 
+
 import React, { useState, useEffect, useCallback } from "react";
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, ActivityIndicator, Alert } from "react-native";
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, ActivityIndicator, Alert, RefreshControl } from "react-native";
 import { useTranslation } from "react-i18next";
+
 import { useTheme } from "../../context/ThemeContext";
 import { OrdersService, OrderFilter } from "../../services/orders.service";
 import { useOrdersStore } from "../../store/orders.store";
@@ -23,14 +25,13 @@ export default function OrdersScreen({ onBack }: OrdersScreenProps) {
     const insets = useSafeAreaInsets();
     const styles = getStyles(colors);
 
-    const [orders, setOrders] = useState<Order[]>([]);
-    const [loading, setLoading] = useState(true);
+    // Store state
+    const { orders, loading, loadAllOrders, loadOrderForEditing, archiveOrder, discardDraft } = useOrdersStore();
+    const [filteredOrders, setFilteredOrders] = useState<Order[]>([]);
     const [searchTerm, setSearchTerm] = useState("");
-
-    // State for creating new order
     const [isCreating, setIsCreating] = useState(false);
-    
-    // Default date range: current month
+
+    // Default dates
     const [startDate, setStartDate] = useState(() => {
         const date = new Date();
         date.setDate(1); 
@@ -41,92 +42,48 @@ export default function OrdersScreen({ onBack }: OrdersScreenProps) {
         return new Date(date.getFullYear(), date.getMonth() + 1, 0).toISOString().split('T')[0];
     });
 
-    const loadOrders = useCallback(async () => {
-        setLoading(true);
-        try {
-            // Fetch from Local DB instead of Mock Service
-            // We import OrdersDb directly or via Store. 
-            // For now, let's use OrdersDb directly as it's cleaner than store for filtering
-            // Note: In real app, might want to move this to Service or Store
-            const allOrders = await Promise.resolve(require("../../db/ordersDb").getAllOrders());
-            
-            console.log(`[DB Verify] Loaded ${allOrders.length} orders from Local DB.`);
-            if (allOrders.length > 0) {
-                 console.log(`[DB Verify] Latest Order: ${JSON.stringify(allOrders[0])}`);
-            }
-
-            // Client-side filtering
-            let filtered = allOrders;
-            console.log(`[OrdersScreen] Initial count: ${filtered.length}`);
-
-            if (startDate) {
-                const start = new Date(startDate);
-                console.log(`[OrdersScreen] Filter Start: ${start.toISOString()}`);
-                filtered = filtered.filter(o => new Date(o.date) >= start);
-                console.log(`[OrdersScreen] After StartDate (${startDate}): ${filtered.length}`);
-            }
-
-            if (endDate) {
-                const end = new Date(endDate);
-                end.setHours(23, 59, 59, 999);
-                console.log(`[OrdersScreen] Filter End: ${end.toISOString()}`);
-                filtered = filtered.filter(o => new Date(o.date) <= end);
-                console.log(`[OrdersScreen] After EndDate (${endDate}): ${filtered.length}`);
-            }
-
-            if (searchTerm) {
-                const searchLower = searchTerm.toLowerCase();
-                filtered = filtered.filter(o =>
-                    o.counterpartyName.toLowerCase().includes(searchLower) ||
-                    o.id.toLowerCase().includes(searchLower)
-                );
-            }
-            
-            setOrders(filtered);
-        } catch (error) {
-            console.error("Failed to load orders", error);
-            Alert.alert(t('common.error'), t('common.failedToLoad'));
-        } finally {
-            setLoading(false);
-        }
-    }, [startDate, endDate, searchTerm, t]);
-
+    // Auto-load on mount
     useEffect(() => {
-        loadOrders();
-    }, [loadOrders]);
+        loadAllOrders();
+    }, []);
+
+    // Filter logic
+    useEffect(() => {
+        let result = orders || [];
+        
+        if (startDate) {
+            const start = new Date(startDate);
+            start.setHours(0, 0, 0, 0);
+            result = result.filter(o => new Date(o.date) >= start);
+        }
+
+        if (endDate) {
+            const end = new Date(endDate);
+            end.setHours(23, 59, 59, 999);
+            result = result.filter(o => new Date(o.date) <= end);
+        }
+
+        if (searchTerm) {
+            const searchLower = searchTerm.toLowerCase();
+            result = result.filter(o =>
+                (o.counterpartyName || '').toLowerCase().includes(searchLower) ||
+                (o.id || '').toLowerCase().includes(searchLower)
+            );
+        }
+        
+        setFilteredOrders(result);
+    }, [orders, startDate, endDate, searchTerm]);
 
     const handleCreateOrder = () => {
+        discardDraft();
         setIsCreating(true);
     };
-
-    const handleSaveSuccess = () => {
-        setIsCreating(false);
-        loadOrders();
-    };
+    const handleSaveSuccess = () => { setIsCreating(false); loadAllOrders(); };
 
     const handleEditOrder = (order: Order) => {
-        // Load order into store "draft"
-        useOrdersStore.getState().loadOrderForEditing(order);
+        loadOrderForEditing(order);
         setIsCreating(true);
     };
-
-    const getStatusColor = (status: OrderStatus) => {
-        switch (status) {
-            case "NEW": return colors.primary; // Blue-ish usually
-            case "ACCEPTED": return "#F59E0B"; // Amazon Orange/Yellow
-            case "COMPLETED": return "#10B981"; // Emerald Green
-            default: return colors.text;
-        }
-    };
-    
-    // Simple Badge Component
-    const StatusBadge = ({ status }: { status: OrderStatus }) => (
-        <View style={[styles.badge, { backgroundColor: getStatusColor(status) + '20' }]}>
-            <Text style={[styles.badgeText, { color: getStatusColor(status) }]}>
-                {t(`status.${status}`, status)}
-            </Text>
-        </View>
-    );
 
     const handleDeleteOrder = (order: Order) => {
         Alert.alert(
@@ -138,13 +95,30 @@ export default function OrdersScreen({ onBack }: OrdersScreenProps) {
                     text: t('common.delete'), 
                     style: 'destructive', 
                     onPress: async () => {
-                        await useOrdersStore.getState().archiveOrder(order.id);
-                        loadOrders();
+                        await archiveOrder(order.id);
+                        loadAllOrders();
                     }
                 }
             ]
         );
     };
+
+    const getStatusColor = (status: OrderStatus) => {
+        switch (status) {
+            case "NEW": return colors.primary;
+            case "ACCEPTED": return "#F59E0B";
+            case "COMPLETED": return "#10B981";
+            default: return colors.text;
+        }
+    };
+    
+    const StatusBadge = ({ status }: { status: OrderStatus }) => (
+        <View style={[styles.badge, { backgroundColor: getStatusColor(status) + '20' }]}>
+            <Text style={[styles.badgeText, { color: getStatusColor(status) }]}>
+                {t(`status.${status}`, status)}
+            </Text>
+        </View>
+    );
 
     const renderItem = ({ item }: { item: Order }) => (
         <View style={styles.card}>
@@ -181,14 +155,19 @@ export default function OrdersScreen({ onBack }: OrdersScreenProps) {
                     <Ionicons name="arrow-back" size={24} color={colors.text} />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>{t('menu.orders')}</Text>
-                <TouchableOpacity onPress={handleCreateOrder} style={styles.createButton}>
-                     <Ionicons name="add" size={24} color={colors.background} />
-                </TouchableOpacity>
+                
+                <View style={{flexDirection: 'row', gap: 10, alignItems: 'center'}}>
+                    <TouchableOpacity onPress={() => loadAllOrders()} style={styles.createButton} activeOpacity={0.7}>
+                         <Ionicons name="refresh" size={20} color={colors.background} />
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={handleCreateOrder} style={styles.createButton}>
+                         <Ionicons name="add" size={24} color={colors.background} />
+                    </TouchableOpacity>
+                </View>
             </View>
 
             {/* Filters */}
             <View style={styles.filtersContainer}>
-                {/* ... existing filters ... */}
                 <View style={styles.dateRow}>
                      <TextInput 
                         style={styles.dateInput}
@@ -220,19 +199,18 @@ export default function OrdersScreen({ onBack }: OrdersScreenProps) {
             </View>
 
             {/* List */}
-            {loading ? (
-                <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 20 }} />
-            ) : (
-                <FlatList
-                    data={orders}
-                    renderItem={renderItem}
-                    keyExtractor={item => item.id}
-                    contentContainerStyle={styles.listContent}
-                    ListEmptyComponent={
-                        <Text style={styles.emptyText}>{t('common.noData', 'No orders found')}</Text>
-                    }
-                />
-            )}
+             <FlatList
+                data={filteredOrders}
+                renderItem={renderItem}
+                keyExtractor={item => item.id}
+                contentContainerStyle={styles.listContent}
+                refreshControl={
+                    <RefreshControl refreshing={loading} onRefresh={loadAllOrders} colors={[colors.primary]} />
+                }
+                ListEmptyComponent={
+                    <Text style={styles.emptyText}>{loading ? t('common.loading', 'Loading...') : t('common.noData', 'No orders found')}</Text>
+                }
+            />
         </View>
     );
 }
