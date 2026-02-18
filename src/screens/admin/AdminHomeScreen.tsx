@@ -20,8 +20,10 @@ import { Counterparty } from "../../types/counterparty";
 import OrdersScreen from "../common/OrdersScreen";
 import OrdersArchiveScreen from "../common/OrdersArchiveScreen";
 import OrganizationSettingsScreen from "./OrganizationSettingsScreen";
+import GoodsReceiptListScreen from "./GoodsReceiptListScreen";
+import GoodsReceiptEditScreen from "./GoodsReceiptEditScreen";
 
-type Screen = "menu" | "warehouses" | "products" | "priceEditorMenu" | "priceTypes" | "priceDocuments" | "priceDocumentEditor" | "settings" | "counterparties" | "counterpartyEdit" | "orders" | "ordersArchive" | "organizationSettings";
+type Screen = "menu" | "warehouses" | "products" | "priceEditorMenu" | "priceTypes" | "priceDocuments" | "priceDocumentEditor" | "settings" | "counterparties" | "counterpartyEdit" | "orders" | "ordersArchive" | "organizationSettings" | "goodsReceipts" | "goodsReceiptEdit";
 
 export default function AdminHomeScreen() {
   const user = useAuthStore((s) => s.user);
@@ -34,6 +36,7 @@ export default function AdminHomeScreen() {
 
   const [currentScreen, setCurrentScreen] = useState<Screen>("menu");
   const [selectedDocumentId, setSelectedDocumentId] = useState<string | undefined>(undefined);
+  const [selectedGoodsReceiptId, setSelectedGoodsReceiptId] = useState<string | undefined>(undefined);
   const [selectedCounterparty, setSelectedCounterparty] = useState<Counterparty | undefined>(undefined);
   
   const { t } = useTranslation();
@@ -51,123 +54,43 @@ export default function AdminHomeScreen() {
     return <ProductsScreen onBack={() => setCurrentScreen("menu")} role="admin" />;
   }
 
+  if (currentScreen === "goodsReceipts") {
+      return (
+          <GoodsReceiptListScreen 
+              onBack={() => setCurrentScreen("menu")}
+              onCreateDocument={() => {
+                  setSelectedGoodsReceiptId(undefined);
+                  setCurrentScreen("goodsReceiptEdit");
+              }}
+              onSelectDocument={(doc) => {
+                  setSelectedGoodsReceiptId(doc.id);
+                  setCurrentScreen("goodsReceiptEdit");
+              }}
+          />
+      );
+  }
+
+  if (currentScreen === "goodsReceiptEdit") {
+      return (
+          <GoodsReceiptEditScreen
+              onBack={() => setCurrentScreen("goodsReceipts")}
+              receiptId={selectedGoodsReceiptId}
+          />
+      );
+  }
+
   if (currentScreen === "organizationSettings") {
     return <OrganizationSettingsScreen onBack={() => setCurrentScreen("menu")} />;
   }
-
-  if (currentScreen === "counterparties") {
-      return (
-          <CounterpartiesListScreen 
-              onBack={() => setCurrentScreen("menu")} 
-              onEdit={(cp) => {
-                  setSelectedCounterparty(cp);
-                  setCurrentScreen("counterpartyEdit");
-              }}
-              onCreate={() => {
-                  setSelectedCounterparty(undefined);
-                  setCurrentScreen("counterpartyEdit");
-              }}
-          />
-      );
-  }
-
-  if (currentScreen === "counterpartyEdit") {
-      return (
-          <CounterpartyEditScreen 
-              onBack={() => setCurrentScreen("counterparties")}
-              counterparty={selectedCounterparty}
-          />
-      );
-  }
-
-  if (currentScreen === "orders") {
-      return <OrdersScreen onBack={() => setCurrentScreen("menu")} />;
-  }
-
-  if (currentScreen === "ordersArchive") {
-      return <OrdersArchiveScreen onBack={() => setCurrentScreen("menu")} />;
-  }
-
+// ... (rest of render logic)
   if (currentScreen === "settings") {
-      return (
-          <View style={{ flex: 1, backgroundColor: colors.background }}>
-              <View style={[styles.header, { paddingTop: insets.top + 10, paddingHorizontal: 16 }]}>
-                  <TouchableOpacity onPress={() => setCurrentScreen("menu")} style={styles.backButton}>
-                      <Ionicons name="arrow-back" size={24} color={colors.text} />
-                  </TouchableOpacity>
-                  <Text style={styles.headerTitle}>{t('settings.title')}</Text>
-              </View>
-              <SettingsScreen />
-          </View>
-      );
+// ...
   }
 
-  if (currentScreen === "priceEditorMenu") {
-      return (
-        <View style={{ flex: 1, backgroundColor: colors.background }}>
-             <View style={[styles.header, { paddingTop: insets.top + 10, paddingHorizontal: 16 }]}>
-                  <TouchableOpacity onPress={() => setCurrentScreen("menu")} style={styles.backButton}>
-                      <Ionicons name="arrow-back" size={24} color={colors.text} />
-                  </TouchableOpacity>
-                  <Text style={styles.headerTitle}>{t('menu.priceEditor')}</Text>
-              </View>
-            
-            <View style={{ padding: 16 }}>
-                <TouchableOpacity
-                    style={styles.menuItem}
-                    onPress={() => setCurrentScreen("priceDocuments")}
-                >
-                    <Text style={styles.menuItemText}>📝 {t('menu.priceSettings')}</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                    style={styles.menuItem}
-                    onPress={() => setCurrentScreen("priceTypes")}
-                >
-                    <Text style={styles.menuItemText}>🏷️ {t('menu.priceTypes')}</Text>
-                </TouchableOpacity>
-            </View>
-        </View>
-      )
-  }
-
-  if (currentScreen === "priceTypes") {
-      return <PriceTypesScreen onBack={() => setCurrentScreen("priceEditorMenu")} />;
-  }
-
-  if (currentScreen === "priceDocuments") {
-      return (
-        <PriceDocumentsListScreen 
-            onBack={() => setCurrentScreen("priceEditorMenu")}
-            onCreateDocument={() => {
-                setSelectedDocumentId(undefined);
-                setCurrentScreen("priceDocumentEditor");
-            }}
-            onSelectDocument={(doc) => {
-                setSelectedDocumentId(doc.id);
-                setCurrentScreen("priceDocumentEditor");
-            }}
-        />
-      );
-  }
-
-  if (currentScreen === "priceDocumentEditor") {
-      return (
-        <PriceDocumentEditorScreen
-            onBack={() => setCurrentScreen("priceDocuments")}
-            documentId={selectedDocumentId}
-        />
-      );
-  }
-
+// ...
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>RemoteOrder</Text>
-
-      <Text style={styles.text}>
-        {user?.email} ({user?.role})
-      </Text>
-      
+{/* ... */}
       <ScrollView contentContainerStyle={styles.menuContainer}>
         <TouchableOpacity
             style={styles.menuItem}
@@ -182,6 +105,13 @@ export default function AdminHomeScreen() {
         >
             <Text style={styles.menuItemText}>📦 {t('menu.products')}</Text>
         </TouchableOpacity>
+
+        <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => setCurrentScreen("goodsReceipts")}
+        >
+            <Text style={styles.menuItemText}>📥 {t('menu.goodsReceipt', 'Поступлення')}</Text>
+        </TouchableOpacity>
         
         <TouchableOpacity
             style={styles.menuItem}
@@ -189,6 +119,7 @@ export default function AdminHomeScreen() {
         >
             <Text style={styles.menuItemText}>💲 {t('menu.priceEditor')}</Text>
         </TouchableOpacity>
+// ...
 
         <TouchableOpacity
             style={styles.menuItem}

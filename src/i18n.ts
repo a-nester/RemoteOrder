@@ -132,7 +132,8 @@ const uk = {
         "orders": "Замовлення",
         "archive": "Архів",
         "settings": "Налаштування",
-        "signOut": "Вихід"
+        "signOut": "Вихід",
+        "goodsReceipt": "Поступлення"
     },
     "settings": {
         "title": "Налаштування",
