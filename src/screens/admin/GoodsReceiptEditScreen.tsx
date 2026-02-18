@@ -4,9 +4,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { GoodsReceiptService } from '../../services/goodsReceipt.service';
 import { OrganizationService } from '../../services/organization.service';
 import { CounterpartyService } from '../../services/counterparty.service';
+import { PriceTypesService } from '../../services/priceTypes.service';
+import { ProductsService } from '../../services/products.service';
 import { GoodsReceipt, GoodsReceiptItem } from '../../types/goodsReceipt';
 import { Warehouse } from '../../types/warehouse';
 import { Counterparty } from '../../types/counterparty';
+import { PriceType } from '../../types/priceType';
+import { Product } from '../../types/product';
 import ProductsScreen from '../common/ProductsScreen';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -23,6 +27,8 @@ export default function GoodsReceiptEditScreen({ onBack, receiptId }: Props) {
     // Data Sources
     const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
     const [providers, setProviders] = useState<Counterparty[]>([]);
+    const [priceTypes, setPriceTypes] = useState<PriceType[]>([]);
+    const [products, setProducts] = useState<Product[]>([]);
 
     // Form State
     const [doc, setDoc] = useState<Partial<GoodsReceipt>>({
@@ -34,6 +40,7 @@ export default function GoodsReceiptEditScreen({ onBack, receiptId }: Props) {
     // Modals
     const [warehouseModal, setWarehouseModal] = useState(false);
     const [providerModal, setProviderModal] = useState(false);
+    const [priceTypeModal, setPriceTypeModal] = useState(false);
 
     const isEditing = !doc.status || doc.status === 'SAVED';
     const isNew = !receiptId;
@@ -45,12 +52,16 @@ export default function GoodsReceiptEditScreen({ onBack, receiptId }: Props) {
     const loadData = async () => {
         setLoading(true);
         try {
-            const [whs, cnts] = await Promise.all([
+            const [whs, cnts, pts, prodsData] = await Promise.all([
                 OrganizationService.getWarehouses(),
-                CounterpartyService.getAll()
+                CounterpartyService.getAll(),
+                PriceTypesService.fetchPriceTypes(),
+                ProductsService.fetchProducts()
             ]);
             setWarehouses(whs);
             setProviders(cnts);
+            setPriceTypes(pts);
+            setProducts(prodsData.products);
 
             if (receiptId) {
                 const existing = await GoodsReceiptService.getById(receiptId);
@@ -96,9 +107,45 @@ export default function GoodsReceiptEditScreen({ onBack, receiptId }: Props) {
         }
     };
 
+    const recalculatePrices = (priceTypeId: string, currentItems: GoodsReceiptItem[]) => {
+        const type = priceTypes.find(t => t.id === priceTypeId);
+        if (!type || !type.slug) return currentItems;
+
+        return currentItems.map(item => {
+            const product = products.find(p => p.id === item.productId);
+            if (!product || !product.prices) return item;
+            
+            const newPrice = Number(product.prices?.[type.slug]) || 0;
+            
+            return {
+                ...item,
+                price: newPrice,
+                total: Number(item.quantity || 0) * newPrice
+            };
+        });
+    };
+
+    const handlePriceTypeSelect = (id: string) => {
+        setDoc(prev => {
+            const newItems = recalculatePrices(id, prev.items || []);
+            return {
+                ...prev,
+                priceTypeId: id,
+                items: newItems
+            };
+        });
+    };
+
     const handleAddProduct = (product: any) => {
-        // Prevent dupes? or allow? usually allow multiple lines for different prices/expiration?
-        // Let's prevent simple dupes for now or just append.
+        let price = 0;
+        if (doc.priceTypeId) {
+            const type = priceTypes.find(t => t.id === doc.priceTypeId);
+            // ProductsScreen might return simple product, lookup full in cached products
+            const fullProduct = products.find(p => p.id === product.id);
+            if (type && fullProduct && fullProduct.prices) {
+                price = Number(fullProduct.prices[type.slug]) || 0;
+            }
+        }
         
         const newItem: GoodsReceiptItem = {
             id: Math.random().toString(), // Temp ID
@@ -106,8 +153,8 @@ export default function GoodsReceiptEditScreen({ onBack, receiptId }: Props) {
             productId: product.id,
             productName: product.name,
             quantity: 1,
-            price: 0,
-            total: 0
+            price: price,
+            total: 1 * price
         };
 
         setDoc(prev => ({ ...prev, items: [...(prev.items || []), newItem] }));
@@ -197,6 +244,13 @@ export default function GoodsReceiptEditScreen({ onBack, receiptId }: Props) {
                     <TouchableOpacity style={styles.inputGroup} onPress={() => setWarehouseModal(true)} disabled={!isEditing}>
                         <Text style={styles.label}>Warehouse</Text>
                         <Text style={[styles.value, !doc.warehouseId && styles.placeholder]}>{currentWarehouse}</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity style={styles.inputGroup} onPress={() => setPriceTypeModal(true)} disabled={!isEditing}>
+                        <Text style={styles.label}>Price Type</Text>
+                        <Text style={[styles.value, !doc.priceTypeId && styles.placeholder]}>
+                            {priceTypes.find(pt => pt.id === doc.priceTypeId)?.name || 'Select Price Type'}
+                        </Text>
                     </TouchableOpacity>
 
                     <TextInput 
@@ -305,6 +359,13 @@ export default function GoodsReceiptEditScreen({ onBack, receiptId }: Props) {
                 title="Select Provider"
                 options={providers}
                 onSelect={(id: string) => setDoc(prev => ({ ...prev, providerId: id }))}
+            />
+            <SelectionModal 
+                visible={priceTypeModal} 
+                onClose={() => setPriceTypeModal(false)}
+                title="Select Price Type"
+                options={priceTypes}
+                onSelect={handlePriceTypeSelect}
             />
         </SafeAreaView>
     );
