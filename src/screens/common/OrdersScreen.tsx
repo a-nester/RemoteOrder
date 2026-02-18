@@ -57,15 +57,21 @@ export default function OrdersScreen({ onBack }: OrdersScreenProps) {
 
             // Client-side filtering
             let filtered = allOrders;
+            console.log(`[OrdersScreen] Initial count: ${filtered.length}`);
 
             if (startDate) {
-                filtered = filtered.filter(o => new Date(o.date) >= new Date(startDate));
+                const start = new Date(startDate);
+                console.log(`[OrdersScreen] Filter Start: ${start.toISOString()}`);
+                filtered = filtered.filter(o => new Date(o.date) >= start);
+                console.log(`[OrdersScreen] After StartDate (${startDate}): ${filtered.length}`);
             }
 
             if (endDate) {
                 const end = new Date(endDate);
                 end.setHours(23, 59, 59, 999);
+                console.log(`[OrdersScreen] Filter End: ${end.toISOString()}`);
                 filtered = filtered.filter(o => new Date(o.date) <= end);
+                console.log(`[OrdersScreen] After EndDate (${endDate}): ${filtered.length}`);
             }
 
             if (searchTerm) {

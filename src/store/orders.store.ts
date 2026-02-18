@@ -1,7 +1,9 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from "zustand";
 import { Order, OrderItem } from "../models/Order";
 import { OrdersService } from "../services/orders.service";
 import * as OrdersDb from "../db/ordersDb";
+import * as CounterpartiesDb from "../db/counterpartiesDb"; // Added import
 import { getUUID } from "../utils/uuid";
 import { useAuthStore } from "./auth.store";
 
@@ -44,15 +46,82 @@ export const useOrdersStore = create<OrdersState>((set, get) => ({
   loadAllOrders: async () => {
     set({ loading: true });
     try {
-      const orders = OrdersDb.getAllOrders();
-      // optionally fetch from API and merge/update
+      let orders = OrdersDb.getAllOrders();
       set({ orders, loading: false });
 
-      // Attempt to sync all local orders to server to ensure consistency
-      // This acts as our "retry" mechanism for offline orders
+      // SYNC PULL
+      let lastSync = 0;
+      if (orders.length === 0) {
+        lastSync = 0;
+      } else {
+        const str = await AsyncStorage.getItem('lastOrderSyncDate');
+        lastSync = str ? parseInt(str, 10) : 0;
+      }
+
+      console.log(`[OrderStore] Syncing orders since ${lastSync} (${new Date(lastSync).toISOString()})...`);
+      const remoteOrders = await OrdersService.syncPull(lastSync);
+
+      if (remoteOrders.length > 0) {
+        console.log(`[OrderStore] Saving ${remoteOrders.length} pulled orders...`);
+
+        // Load counterparties to resolve names
+        let counterpartiesMap = new Map<string, string>();
+        try {
+          // Fetch all, including deleted, to resolve references
+          // Note: getAllCounterparties might not accept args based on previous view?
+          // view_file said: export function getAllCounterparties(includeDeleted = false)
+          // So we pass true.
+          const cps = CounterpartiesDb.getAllCounterparties(true);
+          cps.forEach(c => counterpartiesMap.set(c.id, c.name));
+        } catch (e) {
+          console.warn("Failed to load counterparties for name resolution", e);
+        }
+
+        remoteOrders.forEach(o => {
+          // Resolve Name
+          let cName = o.counterpartyName;
+          if (!cName && o.counterpartyId) {
+            cName = counterpartiesMap.get(o.counterpartyId) || 'Unknown Client';
+          }
+
+          const parsedOrder = {
+            ...o,
+            // Ensure date exists
+            date: o.date ? new Date(o.date).toISOString() : (o.createdAt ? new Date(o.createdAt).toISOString() : new Date().toISOString()),
+            // Ensure counterpartyId exists
+            counterpartyId: o.counterpartyId || 'unknown_id',
+            // Ensure counterpartyName exists
+            counterpartyName: cName || 'Unknown',
+            items: (typeof o.items === 'string' ? JSON.parse(o.items) : (o.items || [])).map((i: any) => ({
+              ...i,
+              id: i.id || getUUID(),
+              orderId: o.id,
+              productId: i.productId || i.id || 'unknown_product',
+              quantity: Number(i.quantity || i.count || 1),
+              price: Number(i.price || 0),
+              total: Number(i.total || ((i.quantity || i.count || 1) * (i.price || 0))),
+              productName: i.productName || i.name || 'Unknown Product',
+              unit: i.unit || 'pcs'
+            })),
+            amount: Number(o.total || o.amount || 0),
+            isDraft: 0,
+            isDeleted: o.isDeleted ? 1 : 0
+          };
+          OrdersDb.saveOrder(parsedOrder);
+        });
+
+        await AsyncStorage.setItem('lastOrderSyncDate', Date.now().toString());
+
+        // Reload from DB
+        orders = OrdersDb.getAllOrders();
+        set({ orders });
+      }
+
+      // Sync PUSH (Push local changes)
       setTimeout(() => {
-        console.log(`Attempting to sync ${orders.length} orders...`);
-        orders.forEach(o => OrdersService.syncOrder(o));
+        const ordersToPush = orders.filter(o => !o.isDraft);
+        console.log(`Attempting to sync push ${ordersToPush.length} orders...`);
+        ordersToPush.forEach(o => OrdersService.syncOrder(o));
       }, 2000);
 
     } catch (e) {

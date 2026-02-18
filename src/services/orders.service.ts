@@ -73,7 +73,7 @@ export const OrdersService = {
             table: 'Order',
             operation: operation,
             data: {
-              counterpartyId: order.counterpartyId,
+              counterpartyId: (order.counterpartyId === 'unknown_id' || !order.counterpartyId) ? null : order.counterpartyId,
               status: order.status,
               total: order.amount,
               isDeleted: order.isDeleted,
@@ -188,4 +188,27 @@ export const OrdersService = {
 
     return finalOrder;
   },
+  async syncPull(lastSyncTime: number = 0) {
+    const userId = useAuthStore.getState().user?.id || '1';
+    try {
+      console.log(`[Sync] Pulling orders since ${new Date(lastSyncTime).toISOString()}...`);
+      const response = await fetch(`${API_URL}/sync/pull`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, lastSync: lastSyncTime })
+      });
+
+      if (!response.ok) throw new Error("Failed to pull orders");
+
+      const json = await response.json();
+      if (json.success && json.data) {
+        console.log(`[Sync] Pulled ${json.data.length} orders.`);
+        return json.data;
+      }
+      return [];
+    } catch (e) {
+      console.error("Sync pull failed", e);
+      return [];
+    }
+  }
 };
