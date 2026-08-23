@@ -104,7 +104,7 @@ export function saveOrder(order: Order) {
     // 2. Replace Items (Delete all and insert new)
     db.runSync("DELETE FROM order_items WHERE orderId = ?", [order.id]);
 
-    for (const item of order.items) {
+    for (const item of (order.items || [])) {
       db.runSync(
         `INSERT OR REPLACE INTO order_items (id, orderId, productId, productName, quantity, price, unit, total)
                VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,

@@ -75,8 +75,9 @@ export const CounterpartyEditScreen = ({ onBack, counterparty }: { onBack: () =>
                 await CounterpartyService.create(payload);
             }
             onBack();
-        } catch (error) {
-            Alert.alert(t('common.error'), t('common.failedToSave'));
+        } catch (error: any) {
+            const message = error?.response?.data?.error || t('common.failedToSave');
+            Alert.alert(t('common.error'), message);
         } finally {
             setSaving(false);
         }

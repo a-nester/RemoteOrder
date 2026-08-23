@@ -1,13 +1,15 @@
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { useState, useEffect } from "react";
+import { Ionicons } from "@expo/vector-icons";
 import { useAuthStore } from "../../store/auth.store";
 import { useWarehouseStore } from "../../store/warehouse.store";
 import CreateOrderScreen from "./CreateOrderScreen";
 import OrderListScreen from "./OrderListScreen";
 import WarehouseScreen from "./WarehouseScreen";
 import ProductsScreen from "../common/ProductsScreen";
+import CollectionPlannerScreen from "../common/CollectionPlannerScreen";
 
-type Screen = "menu" | "create_order" | "order_list" | "warehouse" | "products";
+type Screen = "menu" | "create_order" | "order_list" | "warehouse" | "products" | "collection_planner";
 
 export default function ManagerHomeScreen() {
   const logout = useAuthStore((s) => s.logout);
@@ -20,6 +22,18 @@ export default function ManagerHomeScreen() {
 
   const renderScreen = () => {
     switch (currentScreen) {
+      case "collection_planner":
+        return (
+          <View style={{ flex: 1 }}>
+            <View style={styles.header}>
+              <TouchableOpacity style={styles.backButton} onPress={() => setCurrentScreen("menu")}>
+                <Ionicons name="arrow-back" size={24} color="#111827" />
+              </TouchableOpacity>
+              <Text style={styles.headerTitle}>Планувальник візитів</Text>
+            </View>
+            <CollectionPlannerScreen />
+          </View>
+        );
       case "create_order":
         return <CreateOrderScreen onBack={() => setCurrentScreen("menu")} />;
       case "order_list":
@@ -31,7 +45,14 @@ export default function ManagerHomeScreen() {
       default:
         return (
           <View style={styles.menuContainer}>
-            <Text style={styles.title}>Manager Home</Text>
+            <Text style={styles.title}>Кабінет Менеджера</Text>
+
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => setCurrentScreen("collection_planner")}
+            >
+              <Text style={styles.menuItemText}>📅 Планувальник візитів</Text>
+            </TouchableOpacity>
 
             <TouchableOpacity
               style={styles.menuItem}
@@ -62,7 +83,7 @@ export default function ManagerHomeScreen() {
             </TouchableOpacity>
 
             <TouchableOpacity onPress={logout} style={styles.logoutButton}>
-              <Text style={styles.logoutText}>Log out</Text>
+              <Text style={styles.logoutText}>Вийти</Text>
             </TouchableOpacity>
           </View>
         );
@@ -81,6 +102,25 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 16,
     justifyContent: "center",
+  },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingTop: 40,
+    paddingBottom: 12,
+    backgroundColor: "#FFFFFF",
+    borderBottomWidth: 1,
+    borderBottomColor: "#E5E7EB",
+  },
+  backButton: {
+    padding: 6,
+    marginRight: 10,
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#111827",
   },
   title: {
     fontSize: 24,

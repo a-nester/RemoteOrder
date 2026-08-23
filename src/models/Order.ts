@@ -1,7 +1,9 @@
 export type OrderStatus =
   | "NEW"
   | "ACCEPTED"
-  | "COMPLETED";
+  | "COMPLETED"
+  | "draft"
+  | "submitted";
 
 export type OrderItem = {
   id: string;
@@ -20,6 +22,8 @@ export type Order = {
   counterpartyId: string;
   counterpartyName: string;
   amount: number;
+  total?: number;
+  warehouseId?: string;
   currency: string;
   status: OrderStatus;
   createdAt: number;
@@ -28,6 +32,6 @@ export type Order = {
   clientEmail?: string;
   comment?: string;
   isDraft: number; // 0 or 1 for SQLite boolean
-  isDeleted?: number; // 0 or 1
-  items: OrderItem[];
+  isDeleted?: number | boolean;
+  items?: OrderItem[];
 };

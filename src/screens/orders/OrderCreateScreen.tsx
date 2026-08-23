@@ -100,11 +100,11 @@ export default function OrderCreateScreen({ onBack, onSaveSuccess }: OrderCreate
              updateDraftCounterparty({ id: client.id, name: client.name });
              
              // Recalculate prices for existing items
-             if (draft.items.length > 0) {
+             if (draft.items && draft.items.length > 0) {
                  const priceType = priceTypes.find(pt => pt.id === client.priceTypeId);
                  const priceKey = priceType?.slug || 'standard';
                  
-                 draft.items.forEach(item => {
+                 (draft.items || []).forEach(item => {
                      const product = products.find(p => p.id === item.productId);
                      if (product && product.prices) {
                          let newPrice = 0;
@@ -193,7 +193,7 @@ export default function OrderCreateScreen({ onBack, onSaveSuccess }: OrderCreate
 
     const handleSubmit = async () => {
         if (!draft) return;
-        if (draft.items.length === 0) {
+        if (!draft.items || draft.items.length === 0) {
             Alert.alert(t('common.error'), "Order must have at least one item");
             return;
         }
@@ -273,7 +273,7 @@ export default function OrderCreateScreen({ onBack, onSaveSuccess }: OrderCreate
                         <View style={{ width: 30 }} />
                     </View>
                     
-                    {draft.items.map((item, index) => (
+                    {(draft.items || []).map((item, index) => (
                         <View key={item.id} style={styles.tableRow}>
                             <Text style={[styles.tableText, { flex: 0.5 }]}>{index + 1}</Text>
                             <View style={{ flex: 4 }}>

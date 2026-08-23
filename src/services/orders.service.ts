@@ -75,6 +75,7 @@ export const OrdersService = {
               counterpartyId: (order.counterpartyId === 'unknown_id' || !order.counterpartyId) ? null : order.counterpartyId,
               status: order.status,
               total: order.amount,
+              date: order.date,
               isDeleted: order.isDeleted,
               items: order.items?.map((i: any) => ({
                 id: i.productId,

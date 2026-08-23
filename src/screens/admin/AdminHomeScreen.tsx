@@ -22,8 +22,27 @@ import OrdersArchiveScreen from "../common/OrdersArchiveScreen";
 import OrganizationSettingsScreen from "./OrganizationSettingsScreen";
 import GoodsReceiptListScreen from "./GoodsReceiptListScreen";
 import GoodsReceiptEditScreen from "./GoodsReceiptEditScreen";
+import CollectionPlannerScreen from "../common/CollectionPlannerScreen";
+import TerritoriesScreen from "./TerritoriesScreen";
 
-type Screen = "menu" | "warehouses" | "products" | "priceEditorMenu" | "priceTypes" | "priceDocuments" | "priceDocumentEditor" | "settings" | "counterparties" | "counterpartyEdit" | "orders" | "ordersArchive" | "organizationSettings" | "goodsReceipts" | "goodsReceiptEdit";
+type Screen = 
+  | "menu" 
+  | "warehouses" 
+  | "products" 
+  | "priceEditorMenu" 
+  | "priceTypes" 
+  | "priceDocuments" 
+  | "priceDocumentEditor" 
+  | "settings" 
+  | "counterparties" 
+  | "counterpartyEdit" 
+  | "orders" 
+  | "ordersArchive" 
+  | "organizationSettings" 
+  | "goodsReceipts" 
+  | "goodsReceiptEdit"
+  | "collectionPlanner"
+  | "territories";
 
 export default function AdminHomeScreen() {
   const user = useAuthStore((s) => s.user);
@@ -43,7 +62,6 @@ export default function AdminHomeScreen() {
   const { colors } = useTheme();
 
   const styles = getStyles(colors);
-
   const insets = useSafeAreaInsets();
   
   if (currentScreen === "warehouses") {
@@ -82,16 +100,116 @@ export default function AdminHomeScreen() {
   if (currentScreen === "organizationSettings") {
     return <OrganizationSettingsScreen onBack={() => setCurrentScreen("menu")} />;
   }
-// ... (rest of render logic)
-  if (currentScreen === "settings") {
-// ...
+
+  if (currentScreen === "collectionPlanner") {
+    return (
+      <View style={{ flex: 1 }}>
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.backButton} onPress={() => setCurrentScreen("menu")}>
+            <Ionicons name="arrow-back" size={24} color={colors.text} />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Планувальник візитів</Text>
+        </View>
+        <CollectionPlannerScreen />
+      </View>
+    );
   }
 
-// ...
+  if (currentScreen === "territories") {
+    return (
+      <View style={{ flex: 1 }}>
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.backButton} onPress={() => setCurrentScreen("menu")}>
+            <Ionicons name="arrow-back" size={24} color={colors.text} />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Території</Text>
+        </View>
+        <TerritoriesScreen />
+      </View>
+    );
+  }
+
+  if (currentScreen === "settings") {
+    return <SettingsScreen onBack={() => setCurrentScreen("menu")} />;
+  }
+
+  if (currentScreen === "counterparties") {
+    return (
+      <CounterpartiesListScreen
+        onBack={() => setCurrentScreen("menu")}
+        onEdit={(cp: Counterparty) => {
+          setSelectedCounterparty(cp);
+          setCurrentScreen("counterpartyEdit");
+        }}
+        onCreate={() => {
+          setSelectedCounterparty(undefined);
+          setCurrentScreen("counterpartyEdit");
+        }}
+      />
+    );
+  }
+
+  if (currentScreen === "counterpartyEdit") {
+    return (
+      <CounterpartyEditScreen
+        counterparty={selectedCounterparty}
+        onBack={() => setCurrentScreen("counterparties")}
+      />
+    );
+  }
+
+  if (currentScreen === "orders") {
+    return <OrdersScreen onBack={() => setCurrentScreen("menu")} role="admin" />;
+  }
+
+  if (currentScreen === "ordersArchive") {
+    return <OrdersArchiveScreen onBack={() => setCurrentScreen("menu")} />;
+  }
+
+  if (currentScreen === "priceEditorMenu") {
+    return <PriceEditorScreen onBack={() => setCurrentScreen("menu")} onNavigate={(s) => setCurrentScreen(s as Screen)} />;
+  }
+
+  if (currentScreen === "priceTypes") {
+    return <PriceTypesScreen onBack={() => setCurrentScreen("priceEditorMenu")} />;
+  }
+
+  if (currentScreen === "priceDocuments") {
+    return (
+      <PriceDocumentsListScreen
+        onBack={() => setCurrentScreen("priceEditorMenu")}
+        onSelectDocument={(doc) => {
+          setSelectedDocumentId(doc.id);
+          setCurrentScreen("priceDocumentEditor");
+        }}
+        onCreateDocument={() => {
+          setSelectedDocumentId(undefined);
+          setCurrentScreen("priceDocumentEditor");
+        }}
+      />
+    );
+  }
+
+  if (currentScreen === "priceDocumentEditor") {
+    return (
+      <PriceDocumentEditorScreen
+        documentId={selectedDocumentId}
+        onBack={() => setCurrentScreen("priceDocuments")}
+      />
+    );
+  }
+
   return (
     <View style={styles.container}>
-{/* ... */}
+      <Text style={styles.title}>{t('admin.title', 'Admin Dashboard')}</Text>
       <ScrollView contentContainerStyle={styles.menuContainer}>
+        <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => setCurrentScreen("collectionPlanner")}
+        >
+            <Text style={styles.menuItemText}>📅 {t('menu.planner', 'Планувальник візитів')}</Text>
+        </TouchableOpacity>
+
         <TouchableOpacity
             style={styles.menuItem}
             onPress={() => setCurrentScreen("warehouses")}
@@ -119,13 +237,19 @@ export default function AdminHomeScreen() {
         >
             <Text style={styles.menuItemText}>💲 {t('menu.priceEditor')}</Text>
         </TouchableOpacity>
-// ...
 
         <TouchableOpacity
             style={styles.menuItem}
             onPress={() => setCurrentScreen("counterparties")}
         >
             <Text style={styles.menuItemText}>👥 {t('menu.counterparties')}</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => setCurrentScreen("territories")}
+        >
+            <Text style={styles.menuItemText}>🗺️ {t('menu.territories', 'Території')}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -178,15 +302,19 @@ const getStyles = (colors: any) => StyleSheet.create({
   header: {
       flexDirection: 'row',
       alignItems: 'center',
-      marginBottom: 20,
-      paddingTop: 10
+      paddingHorizontal: 16,
+      paddingTop: 40,
+      paddingBottom: 12,
+      backgroundColor: colors.card,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
   },
   backButton: {
-      padding: 10,
+      padding: 6,
       marginRight: 10
   },
   headerTitle: {
-      fontSize: 20,
+      fontSize: 18,
       fontWeight: 'bold',
       color: colors.text
   },

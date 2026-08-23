@@ -5,7 +5,11 @@ import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../context/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
 
-export const SettingsScreen = () => {
+interface SettingsScreenProps {
+    onBack?: () => void;
+}
+
+export const SettingsScreen = ({ onBack }: SettingsScreenProps = {}) => {
     const { t, i18n } = useTranslation();
     const { theme, setTheme, colors, isDark } = useTheme();
 

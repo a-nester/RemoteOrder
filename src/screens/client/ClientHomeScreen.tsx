@@ -13,13 +13,11 @@ export default function ClientHomeScreen() {
   const [currentScreen, setCurrentScreen] = useState<Screen>("menu");
 
   const orders = useOrdersStore((s) => s.orders);
-  const loadOrdersByClient = useOrdersStore((s) => s.loadOrdersByClient);
+  const loadAllOrders = useOrdersStore((s) => s.loadAllOrders);
 
   useEffect(() => {
-    if (user?.email) {
-      loadOrdersByClient(user.email);
-    }
-  }, [user?.email]);
+    loadAllOrders();
+  }, []);
 
   if (currentScreen === "products") {
     return <ProductsScreen onBack={() => setCurrentScreen("menu")} role="client" />;

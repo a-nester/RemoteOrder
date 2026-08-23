@@ -10,6 +10,10 @@ export type User = {
   email: string;
   role: Role;
   warehouseId?: string;
+  visibleWarehouses?: string[];
+  visibleTerritories?: string[];
+  visiblePriceTypes?: string[];
+  permissions?: any;
 };
 
 type AuthState = {

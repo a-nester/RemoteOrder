@@ -17,6 +17,7 @@ import OrderCreateScreen from "../orders/OrderCreateScreen";
 
 interface OrdersScreenProps {
     onBack: () => void;
+    role?: string;
 }
 
 export default function OrdersScreen({ onBack }: OrdersScreenProps) {

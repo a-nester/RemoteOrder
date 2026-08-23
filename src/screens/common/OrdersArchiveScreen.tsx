@@ -47,20 +47,20 @@ export default function OrdersArchiveScreen({ onBack }: OrdersArchiveScreenProps
             let filtered = allOrders;
 
             if (startDate) {
-                filtered = filtered.filter(o => new Date(o.date) >= new Date(startDate));
+                filtered = filtered.filter((o: any) => new Date(o.date) >= new Date(startDate));
             }
 
             if (endDate) {
                 const end = new Date(endDate);
                 end.setHours(23, 59, 59, 999);
-                filtered = filtered.filter(o => new Date(o.date) <= end);
+                filtered = filtered.filter((o: any) => new Date(o.date) <= end);
             }
 
             if (searchTerm) {
                 const searchLower = searchTerm.toLowerCase();
-                filtered = filtered.filter(o =>
-                    o.counterpartyName.toLowerCase().includes(searchLower) ||
-                    o.id.toLowerCase().includes(searchLower)
+                filtered = filtered.filter((o: any) =>
+                    (o.counterpartyName || "").toLowerCase().includes(searchLower) ||
+                    String(o.id).toLowerCase().includes(searchLower)
                 );
             }
             

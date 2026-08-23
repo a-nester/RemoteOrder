@@ -4,11 +4,14 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 interface Props {
   onBack: () => void;
-  onNavigateToPriceTypes: () => void;
-  onNavigateToProducts: () => void;
+  onNavigateToPriceTypes?: () => void;
+  onNavigateToProducts?: () => void;
+  onNavigate?: (screen: string) => void;
 }
 
-export default function PriceEditorScreen({ onBack, onNavigateToPriceTypes, onNavigateToProducts }: Props) {
+export default function PriceEditorScreen({ onBack, onNavigateToPriceTypes, onNavigateToProducts, onNavigate }: Props) {
+  const handlePriceTypes = onNavigateToPriceTypes || (() => onNavigate?.("priceTypes"));
+  const handleProducts = onNavigateToProducts || (() => onNavigate?.("priceDocuments"));
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -20,7 +23,7 @@ export default function PriceEditorScreen({ onBack, onNavigateToPriceTypes, onNa
       </View>
 
       <View style={styles.content}>
-        <TouchableOpacity style={styles.menuItem} onPress={onNavigateToPriceTypes}>
+        <TouchableOpacity style={styles.menuItem} onPress={handlePriceTypes}>
             <Text style={styles.icon}>🏷️</Text>
             <View>
                 <Text style={styles.menuTitle}>Типи цін</Text>
@@ -28,7 +31,7 @@ export default function PriceEditorScreen({ onBack, onNavigateToPriceTypes, onNa
             </View>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.menuItem} onPress={onNavigateToProducts}>
+        <TouchableOpacity style={styles.menuItem} onPress={handleProducts}>
             <Text style={styles.icon}>💰</Text>
             <View>
                 <Text style={styles.menuTitle}>Встановлення цін</Text>

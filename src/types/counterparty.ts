@@ -1,4 +1,3 @@
-
 export interface CounterpartyGroup {
     id: string;
     name: string;
@@ -14,11 +13,13 @@ export interface Counterparty {
     contactPerson?: string;
     isBuyer: boolean;
     isSeller: boolean;
-    priceTypeId?: string;
-    groupId?: string;
+    priceTypeId?: string | null;
+    groupId?: string | null;
+    territoryId?: string | null;
     // Expanded fields
     groupName?: string;
     priceTypeName?: string;
+    territoryName?: string;
     createdAt?: string;
     updatedAt?: string;
 }

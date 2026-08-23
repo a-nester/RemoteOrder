@@ -73,7 +73,7 @@ export const useOrdersStore = create<OrdersState>((set, get) => ({
           const products = ProductsDb.getAllProducts();
           const productsMap = new Map(products.map(p => [p.id, p]));
 
-          remoteOrders.forEach(o => {
+          remoteOrders.forEach((o: any) => {
             // Resolve Name
             let cName = o.counterpartyName;
             if (!cName && o.counterpartyId) {
@@ -123,13 +123,6 @@ export const useOrdersStore = create<OrdersState>((set, get) => ({
         }
       }
 
-      // Sync PUSH (Push local changes)
-      setTimeout(() => {
-        const ordersToPush = orders.filter(o => !o.isDraft);
-        console.log(`Attempting to sync push ${ordersToPush.length} orders...`);
-        ordersToPush.forEach(o => OrdersService.syncOrder(o));
-      }, 2000);
-
     } catch (e) {
       console.error(e);
       set({ loading: false });
@@ -175,7 +168,8 @@ export const useOrdersStore = create<OrdersState>((set, get) => ({
       total: itemData.quantity * itemData.price
     };
 
-    const updatedItems = [...draft.items, newItem];
+    const currentItems = draft.items || [];
+    const updatedItems = [...currentItems, newItem];
     const updatedAmount = updatedItems.reduce((sum, i) => sum + i.total, 0);
 
     const updatedDraft = { ...draft, items: updatedItems, amount: updatedAmount };
@@ -187,7 +181,8 @@ export const useOrdersStore = create<OrdersState>((set, get) => ({
     const { draft } = get();
     if (!draft) return;
 
-    const updatedItems = draft.items.map(item => {
+    const currentItems = draft.items || [];
+    const updatedItems = currentItems.map(item => {
       if (item.id === itemId) {
         const updatedItem = { ...item, ...updates };
         // Recalculate total if quantity or price changed
@@ -210,7 +205,8 @@ export const useOrdersStore = create<OrdersState>((set, get) => ({
     const { draft } = get();
     if (!draft) return;
 
-    const updatedItems = draft.items.filter(item => item.id !== itemId);
+    const currentItems = draft.items || [];
+    const updatedItems = currentItems.filter(item => item.id !== itemId);
     const updatedAmount = updatedItems.reduce((sum, i) => sum + i.total, 0);
 
     const updatedDraft = { ...draft, items: updatedItems, amount: updatedAmount };

@@ -1,17 +1,17 @@
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { useAuthStore } from "../../store/auth.store";
 import { useOrdersStore } from "../../store/orders.store";
-import { uuidv4 } from "../../utils/uuid";
+import { getUUID } from "../../utils/uuid";
 
 export default function CreateOrderScreen() {
   const user = useAuthStore((s) => s.user);
-  const addOrder = useOrdersStore((s) => s.addOrder);
+  const addOrder = (useOrdersStore.getState() as any).addOrder || (async () => {});
 
   const handleCreate = async () => {
     if (!user) return;
 
     await addOrder({
-      id: uuidv4(),
+      id: getUUID(),
       clientId: user.id.toString(),
       clientEmail: user.email,
       status: "draft",
